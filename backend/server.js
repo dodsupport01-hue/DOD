@@ -15,6 +15,7 @@ const app = express();
 const allowedOrigins = [
   'https://dodsmarthealth.com',
   'https://www.dodsmarthealth.com',
+  'https://dodsmarthealth.netlify.app',
   process.env.FRONTEND_URL,
   'http://127.0.0.1:5500',   // VS Code Live Server
   'http://localhost:5500',
