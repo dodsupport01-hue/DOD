@@ -1,0 +1,30 @@
+# Netlify configuration for DOD Healthcare Static Frontend
+
+[build]
+  # Root of the repo is the publish directory (static site)
+  publish = "."
+  # No build command needed - pure static HTML/CSS/JS
+
+# Redirect /admin to admin panel
+[[redirects]]
+  from = "/admin"
+  to = "/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/"
+  to = "/admin/index.html"
+  status = 200
+
+# Headers for security and CORS
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"

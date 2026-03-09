@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | DOD Healthcare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Dashboard Layout -->
+<div class="dashboard-layout">
+
+  <!-- ╔══════════ SIDEBAR ══════════╗ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="30" fill="url(#g1)"/>
+        <path d="M30 15v30M15 30h30" stroke="white" stroke-width="5" stroke-linecap="round"/>
+        <defs><linearGradient id="g1" x1="0" y1="0" x2="60" y2="60">
+          <stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#6366f1"/>
+        </linearGradient></defs>
+      </svg>
+      <div class="sidebar-logo-text"><h2>DOD Admin</h2><span>Control Panel</span></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+
+      <div class="nav-section-label">Content</div>
+      <a class="nav-item" data-page="brands" onclick="showPage('brands')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Brand Partners
+      </a>
+      <a class="nav-item" data-page="certifications" onclick="showPage('certifications')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+        Certifications
+      </a>
+
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" data-page="settings" onclick="showPage('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-info">
+        <div class="admin-avatar" id="adminAvatar">A</div>
+        <div>
+          <div class="admin-name" id="adminName">Admin</div>
+          <div class="admin-role">Administrator</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">
+        <svg style="width:14px;height:14px;display:inline;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- ╔══════════ MAIN CONTENT ══════════╗ -->
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 id="pageTitle">Dashboard</h1>
+        <p id="pageSubtitle">Welcome back! Manage your website content.</p>
+      </div>
+      <div class="topbar-right">
+        <a href="../index.html" target="_blank" class="btn btn-outline">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          View Website
+        </a>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ── DASHBOARD PAGE ── -->
+      <div id="page-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue">🤝</div>
+            <div><div class="stat-value" id="statBrands">-</div><div class="stat-label">Brand Partners</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon purple">🏆</div>
+            <div><div class="stat-value" id="statCerts">-</div><div class="stat-label">Certifications</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div><div class="stat-value">Live</div><div class="stat-label">Website Status</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><h2>Quick Actions</h2></div>
+          <div class="panel-body" style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="showPage('brands');setTimeout(()=>openBrandModal(),300)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Brand Partner
+            </button>
+            <button class="btn btn-secondary" onclick="showPage('certifications');setTimeout(()=>openCertModal(),300)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Certification
+            </button>
+            <a href="../index.html#brands" target="_blank" class="btn btn-outline">View Brands on Site</a>
+            <a href="../index.html#certifications" target="_blank" class="btn btn-outline">View Certs on Site</a>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><h2>How It Works</h2></div>
+          <div class="panel-body" style="color:var(--text-muted);font-size:0.875rem;line-height:2;">
+            <p>1️⃣ &nbsp;Upload brand logos → they appear instantly in the <strong style="color:var(--text)">Brands Who Collaborate With Us</strong> section on your website.</p>
+            <p>2️⃣ &nbsp;Add certification cards → they update the <strong style="color:var(--text)">Certifications & Validations</strong> section in real-time.</p>
+            <p>3️⃣ &nbsp;All images are stored on <strong style="color:var(--text)">Cloudinary CDN</strong> and URLs saved to <strong style="color:var(--text)">MongoDB Atlas</strong>.</p>
+            <p>4️⃣ &nbsp;The website fetches updated data from the API every time it loads.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── BRANDS PAGE ── -->
+      <div id="page-brands" style="display:none;">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>🤝 Brand Partners</h2>
+            <button class="btn btn-primary" onclick="openBrandModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Brand
+            </button>
+          </div>
+          <div class="panel-body">
+            <div id="brandsLoading" class="loading"><div class="spinner"></div>Loading brands...</div>
+            <div id="brandsGrid" class="items-grid" style="display:none;"></div>
+            <div id="brandsEmpty" class="empty-state" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              <p>No brands yet. Click "Add Brand" to get started.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CERTIFICATIONS PAGE ── -->
+      <div id="page-certifications" style="display:none;">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>🏆 Certifications & Validations</h2>
+            <button class="btn btn-secondary" onclick="openCertModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Certification
+            </button>
+          </div>
+          <div class="panel-body">
+            <div id="certsLoading" class="loading"><div class="spinner"></div>Loading certifications...</div>
+            <div id="certsGrid" class="items-grid" style="display:none;"></div>
+            <div id="certsEmpty" class="empty-state" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+              <p>No certifications yet. Click "Add Certification" to get started.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS PAGE ── -->
+      <div id="page-settings" style="display:none;">
+        <div class="panel" style="max-width:480px;">
+          <div class="panel-header"><h2>🔐 Change Password</h2></div>
+          <div class="panel-body" style="display:flex;flex-direction:column;gap:1rem;">
+            <div class="alert" id="pwAlert" style="display:none;"></div>
+            <div>
+              <label class="form-label">Current Password</label>
+              <input type="password" class="form-input" id="currentPw" placeholder="Current password" />
+            </div>
+            <div>
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-input" id="newPw" placeholder="New password (min 6 chars)" />
+            </div>
+            <div>
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="form-input" id="confirmPw" placeholder="Confirm new password" />
+            </div>
+            <button class="btn btn-primary" onclick="changePassword()">Update Password</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /dashboard-layout -->
+
+<!-- ╔══════════ BRAND MODAL ══════════╗ -->
+<div class="modal-overlay" id="brandModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="brandModalTitle">Add Brand Partner</h3>
+      <button class="modal-close" onclick="closeBrandModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="brandModalAlert" class="alert" style="display:none;"></div>
+      <input type="hidden" id="brandEditId" />
+
+      <div>
+        <label class="form-label">Brand Name *</label>
+        <input type="text" class="form-input" id="brandName" placeholder="e.g. Mayo Clinic" />
+      </div>
+
+      <div>
+        <label class="form-label">Alt Text (for accessibility)</label>
+        <input type="text" class="form-input" id="brandAlt" placeholder="e.g. Mayo Clinic Logo" />
+      </div>
+
+      <div>
+        <label class="form-label">Display Order</label>
+        <input type="number" class="form-input" id="brandOrder" placeholder="0" min="0" />
+      </div>
+
+      <div>
+        <label class="form-label">Brand Logo Image *</label>
+        <div class="upload-area" id="brandUploadArea" onclick="document.getElementById('brandFile').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          <p>Click or drag & drop to upload logo</p>
+          <p style="font-size:0.75rem;margin-top:0.25rem;">PNG, JPG, SVG, WebP up to 5MB</p>
+          <div class="upload-name" id="brandFileName"></div>
+          <input type="file" id="brandFile" accept="image/*" onchange="previewImage(this,'brandPreview','brandFileName')" />
+        </div>
+        <img id="brandPreview" class="preview-img" style="display:none;" alt="Preview" />
+      </div>
+
+      <div id="brandActiveRow">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="brandActive">
+          <option value="true">Active (visible on website)</option>
+          <option value="false">Inactive (hidden)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeBrandModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveBrandBtn" onclick="saveBrand()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Brand
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════ CERT MODAL ══════════╗ -->
+<div class="modal-overlay" id="certModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="certModalTitle">Add Certification</h3>
+      <button class="modal-close" onclick="closeCertModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="certModalAlert" class="alert" style="display:none;"></div>
+      <input type="hidden" id="certEditId" />
+
+      <div>
+        <label class="form-label">Certification Title *</label>
+        <input type="text" class="form-input" id="certTitle" placeholder="e.g. ISO 13485:2016" />
+      </div>
+
+      <div>
+        <label class="form-label">Description *</label>
+        <textarea class="form-textarea" id="certDesc" placeholder="Brief description of this certification..."></textarea>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <div>
+          <label class="form-label">Year / Status</label>
+          <input type="text" class="form-input" id="certYear" placeholder="e.g. Certified 2024" />
+        </div>
+        <div>
+          <label class="form-label">Emoji Seal (if no image)</label>
+          <input type="text" class="form-input" id="certEmoji" placeholder="e.g. 🏆" />
+        </div>
+      </div>
+
+      <div>
+        <label class="form-label">Display Order</label>
+        <input type="number" class="form-input" id="certOrder" placeholder="0" min="0" />
+      </div>
+
+      <div>
+        <label class="form-label">Certification Image / Logo (optional)</label>
+        <div class="upload-area" id="certUploadArea" onclick="document.getElementById('certFile').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          <p>Click or drag & drop to upload image</p>
+          <p style="font-size:0.75rem;margin-top:0.25rem;">PNG, JPG, SVG up to 5MB</p>
+          <div class="upload-name" id="certFileName"></div>
+          <input type="file" id="certFile" accept="image/*" onchange="previewImage(this,'certPreview','certFileName')" />
+        </div>
+        <img id="certPreview" class="preview-img" style="display:none;" alt="Preview" />
+      </div>
+
+      <div>
+        <label class="form-label">Status</label>
+        <select class="form-select" id="certActive">
+          <option value="true">Active (visible on website)</option>
+          <option value="false">Inactive (hidden)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeCertModal()">Cancel</button>
+      <button class="btn btn-secondary" id="saveCertBtn" onclick="saveCert()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Certification
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SCRIPT ═══════════════════ -->
+<script>
+// ─── CONFIG ─────────────────────────────────────────────────────────────────
+const API_BASE = 'https://dod-healthcare-api.onrender.com/api';
+// For local dev: const API_BASE = 'http://localhost:5000/api';
+
+// ─── AUTH CHECK ──────────────────────────────────────────────────────────────
+const token = localStorage.getItem('dod_admin_token');
+if (!token) { window.location.href = 'index.html'; }
+
+const adminInfo = JSON.parse(localStorage.getItem('dod_admin_info') || '{}');
+document.getElementById('adminName').textContent = adminInfo.name || 'Admin';
+document.getElementById('adminAvatar').textContent = (adminInfo.name || 'A')[0].toUpperCase();
+
+// ─── TOAST ──────────────────────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ─── API HELPER ──────────────────────────────────────────────────────────────
+async function apiCall(path, method = 'GET', body = null, isFormData = false) {
+  const headers = { Authorization: `Bearer ${token}` };
+  if (!isFormData && body) headers['Content-Type'] = 'application/json';
+
+  const opts = { method, headers };
+  if (body) opts.body = isFormData ? body : JSON.stringify(body);
+
+  const res = await fetch(`${API_BASE}${path}`, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Request failed');
+  return data;
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+const pages = { dashboard: 'Dashboard', brands: 'Brand Partners', certifications: 'Certifications', settings: 'Settings' };
+const subtitles = {
+  dashboard: 'Welcome back! Manage your website content.',
+  brands: 'Manage brands displayed in the "Brands Who Collaborate With Us" section.',
+  certifications: 'Manage the "Certifications & Validations" section.',
+  settings: 'Manage your admin account settings.',
+};
+
+function showPage(name) {
+  Object.keys(pages).forEach(p => {
+    const el = document.getElementById(`page-${p}`);
+    if (el) el.style.display = p === name ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === name);
+  });
+  document.getElementById('pageTitle').textContent = pages[name];
+  document.getElementById('pageSubtitle').textContent = subtitles[name];
+
+  if (name === 'brands') loadBrands();
+  if (name === 'certifications') loadCerts();
+}
+
+// ─── LOGOUT ──────────────────────────────────────────────────────────────────
+function logout() {
+  localStorage.removeItem('dod_admin_token');
+  localStorage.removeItem('dod_admin_info');
+  window.location.href = 'index.html';
+}
+
+// ─── PREVIEW IMAGE ───────────────────────────────────────────────────────────
+function previewImage(input, previewId, nameId) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById(nameId).textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = document.getElementById(previewId);
+    img.src = e.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════ BRANDS ═══════════════════════════════════════════════════
+let brands = [];
+
+async function loadBrands() {
+  document.getElementById('brandsLoading').style.display = '';
+  document.getElementById('brandsGrid').style.display = 'none';
+  document.getElementById('brandsEmpty').style.display = 'none';
+
+  try {
+    const data = await apiCall('/brands/all');
+    brands = data.data;
+    renderBrands();
+    document.getElementById('statBrands').textContent = brands.filter(b => b.isActive).length;
+  } catch (err) {
+    toast('Failed to load brands: ' + err.message, 'error');
+  } finally {
+    document.getElementById('brandsLoading').style.display = 'none';
+  }
+}
+
+function renderBrands() {
+  const grid = document.getElementById('brandsGrid');
+  const empty = document.getElementById('brandsEmpty');
+
+  if (!brands.length) {
+    empty.style.display = '';
+    grid.style.display = 'none';
+    return;
+  }
+
+  grid.innerHTML = brands.map(b => `
+    <div class="item-card">
+      ${b.logoUrl
+        ? `<img class="item-img" src="${b.logoUrl}" alt="${b.altText || b.name}" />`
+        : `<div class="item-img-placeholder">🏢</div>`}
+      <div class="item-info">
+        <div class="item-name">
+          ${b.name}
+          ${!b.isActive ? '<span class="item-badge-inactive">Hidden</span>' : ''}
+        </div>
+        <div class="item-desc">Order: ${b.order}</div>
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-outline" onclick="editBrand('${b._id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="btn btn-danger" onclick="deleteBrand('${b._id}','${b.name}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Delete
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  grid.style.display = 'grid';
+}
+
+function openBrandModal(brand = null) {
+  document.getElementById('brandEditId').value = brand ? brand._id : '';
+  document.getElementById('brandModalTitle').textContent = brand ? 'Edit Brand' : 'Add Brand Partner';
+  document.getElementById('brandName').value = brand ? brand.name : '';
+  document.getElementById('brandAlt').value = brand ? (brand.altText || '') : '';
+  document.getElementById('brandOrder').value = brand ? brand.order : 0;
+  document.getElementById('brandActive').value = brand ? String(brand.isActive) : 'true';
+  document.getElementById('brandFileName').textContent = '';
+  document.getElementById('brandPreview').style.display = brand && brand.logoUrl ? 'block' : 'none';
+  if (brand && brand.logoUrl) document.getElementById('brandPreview').src = brand.logoUrl;
+  document.getElementById('brandFile').value = '';
+  document.getElementById('brandModalAlert').style.display = 'none';
+  document.getElementById('brandModal').classList.add('open');
+}
+
+function closeBrandModal() { document.getElementById('brandModal').classList.remove('open'); }
+
+function editBrand(id) {
+  const brand = brands.find(b => b._id === id);
+  if (brand) openBrandModal(brand);
+}
+
+async function saveBrand() {
+  const id = document.getElementById('brandEditId').value;
+  const name = document.getElementById('brandName').value.trim();
+  const file = document.getElementById('brandFile').files[0];
+
+  if (!name) { showModalAlert('brandModalAlert', 'Brand name is required.'); return; }
+  if (!id && !file) { showModalAlert('brandModalAlert', 'Please select a logo image.'); return; }
+
+  const btn = document.getElementById('saveBrandBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('altText', document.getElementById('brandAlt').value || name);
+  formData.append('order', document.getElementById('brandOrder').value || 0);
+  formData.append('isActive', document.getElementById('brandActive').value);
+  if (file) formData.append('logo', file);
+
+  try {
+    if (id) {
+      await apiCall(`/brands/${id}`, 'PUT', formData, true);
+      toast('Brand updated successfully! Website updated. ✅');
+    } else {
+      await apiCall('/brands', 'POST', formData, true);
+      toast('Brand added! Now visible on website. ✅');
+    }
+    closeBrandModal();
+    loadBrands();
+  } catch (err) {
+    showModalAlert('brandModalAlert', err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Brand';
+  }
+}
+
+async function deleteBrand(id, name) {
+  if (!confirm(`Delete brand "${name}"? This will remove it from the website.`)) return;
+  try {
+    await apiCall(`/brands/${id}`, 'DELETE');
+    toast(`Brand "${name}" deleted.`, 'info');
+    loadBrands();
+  } catch (err) {
+    toast('Delete failed: ' + err.message, 'error');
+  }
+}
+
+// ═══════════════════ CERTIFICATIONS ═══════════════════════════════════════════
+let certs = [];
+
+async function loadCerts() {
+  document.getElementById('certsLoading').style.display = '';
+  document.getElementById('certsGrid').style.display = 'none';
+  document.getElementById('certsEmpty').style.display = 'none';
+
+  try {
+    const data = await apiCall('/certifications/all');
+    certs = data.data;
+    renderCerts();
+    document.getElementById('statCerts').textContent = certs.filter(c => c.isActive).length;
+  } catch (err) {
+    toast('Failed to load certifications: ' + err.message, 'error');
+  } finally {
+    document.getElementById('certsLoading').style.display = 'none';
+  }
+}
+
+function renderCerts() {
+  const grid = document.getElementById('certsGrid');
+  const empty = document.getElementById('certsEmpty');
+
+  if (!certs.length) {
+    empty.style.display = '';
+    grid.style.display = 'none';
+    return;
+  }
+
+  grid.innerHTML = certs.map(c => `
+    <div class="item-card">
+      ${c.logoUrl
+        ? `<img class="item-img cert-img" src="${c.logoUrl}" alt="${c.title}" />`
+        : `<div class="item-img-placeholder" style="height:100px;">${c.sealEmoji || '🏆'}</div>`}
+      <div class="item-info">
+        <div class="item-name">
+          ${c.title}
+          ${!c.isActive ? '<span class="item-badge-inactive">Hidden</span>' : ''}
+        </div>
+        <div class="item-desc">${c.description}</div>
+        ${c.year ? `<span class="item-year">${c.year}</span>` : ''}
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-outline" onclick="editCert('${c._id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="btn btn-danger" onclick="deleteCert('${c._id}','${c.title}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Delete
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  grid.style.display = 'grid';
+}
+
+function openCertModal(cert = null) {
+  document.getElementById('certEditId').value = cert ? cert._id : '';
+  document.getElementById('certModalTitle').textContent = cert ? 'Edit Certification' : 'Add Certification';
+  document.getElementById('certTitle').value = cert ? cert.title : '';
+  document.getElementById('certDesc').value = cert ? cert.description : '';
+  document.getElementById('certYear').value = cert ? (cert.year || '') : '';
+  document.getElementById('certEmoji').value = cert ? (cert.sealEmoji || '🏆') : '🏆';
+  document.getElementById('certOrder').value = cert ? cert.order : 0;
+  document.getElementById('certActive').value = cert ? String(cert.isActive) : 'true';
+  document.getElementById('certFileName').textContent = '';
+  document.getElementById('certPreview').style.display = cert && cert.logoUrl ? 'block' : 'none';
+  if (cert && cert.logoUrl) document.getElementById('certPreview').src = cert.logoUrl;
+  document.getElementById('certFile').value = '';
+  document.getElementById('certModalAlert').style.display = 'none';
+  document.getElementById('certModal').classList.add('open');
+}
+
+function closeCertModal() { document.getElementById('certModal').classList.remove('open'); }
+
+function editCert(id) {
+  const cert = certs.find(c => c._id === id);
+  if (cert) openCertModal(cert);
+}
+
+async function saveCert() {
+  const id = document.getElementById('certEditId').value;
+  const title = document.getElementById('certTitle').value.trim();
+  const desc = document.getElementById('certDesc').value.trim();
+
+  if (!title || !desc) { showModalAlert('certModalAlert', 'Title and description are required.'); return; }
+
+  const btn = document.getElementById('saveCertBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('description', desc);
+  formData.append('year', document.getElementById('certYear').value);
+  formData.append('sealEmoji', document.getElementById('certEmoji').value || '🏆');
+  formData.append('order', document.getElementById('certOrder').value || 0);
+  formData.append('isActive', document.getElementById('certActive').value);
+  const file = document.getElementById('certFile').files[0];
+  if (file) formData.append('logo', file);
+
+  try {
+    if (id) {
+      await apiCall(`/certifications/${id}`, 'PUT', formData, true);
+      toast('Certification updated! Website updated. ✅');
+    } else {
+      await apiCall('/certifications', 'POST', formData, true);
+      toast('Certification added! Now visible on website. ✅');
+    }
+    closeCertModal();
+    loadCerts();
+  } catch (err) {
+    showModalAlert('certModalAlert', err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Certification';
+  }
+}
+
+async function deleteCert(id, title) {
+  if (!confirm(`Delete certification "${title}"?`)) return;
+  try {
+    await apiCall(`/certifications/${id}`, 'DELETE');
+    toast(`"${title}" deleted.`, 'info');
+    loadCerts();
+  } catch (err) {
+    toast('Delete failed: ' + err.message, 'error');
+  }
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+async function changePassword() {
+  const cur = document.getElementById('currentPw').value;
+  const nw = document.getElementById('newPw').value;
+  const cf = document.getElementById('confirmPw').value;
+
+  if (!cur || !nw || !cf) { showSettingsAlert('All fields are required.', 'error'); return; }
+  if (nw !== cf) { showSettingsAlert('New passwords do not match.', 'error'); return; }
+  if (nw.length < 6) { showSettingsAlert('Password must be at least 6 characters.', 'error'); return; }
+
+  try {
+    await apiCall('/auth/change-password', 'POST', { currentPassword: cur, newPassword: nw });
+    showSettingsAlert('Password changed successfully!', 'success');
+    document.getElementById('currentPw').value = '';
+    document.getElementById('newPw').value = '';
+    document.getElementById('confirmPw').value = '';
+  } catch (err) {
+    showSettingsAlert(err.message, 'error');
+  }
+}
+
+function showSettingsAlert(msg, type) {
+  const a = document.getElementById('pwAlert');
+  a.textContent = msg;
+  a.className = `alert alert-${type}`;
+  a.style.display = 'block';
+}
+
+function showModalAlert(id, msg) {
+  const a = document.getElementById(id);
+  a.textContent = msg;
+  a.className = 'alert alert-error';
+  a.style.display = 'block';
+}
+
+// ─── DASHBOARD STATS LOAD ────────────────────────────────────────────────────
+async function loadDashboardStats() {
+  try {
+    const [b, c] = await Promise.all([
+      fetch(`${API_BASE}/brands`).then(r => r.json()),
+      fetch(`${API_BASE}/certifications`).then(r => r.json()),
+    ]);
+    document.getElementById('statBrands').textContent = (b.data || []).length;
+    document.getElementById('statCerts').textContent = (c.data || []).length;
+  } catch (_) {}
+}
+
+// Init
+loadDashboardStats();
+</script>
+</body>
+</html>
