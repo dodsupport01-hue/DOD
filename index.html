@@ -1796,11 +1796,24 @@
         // For local dev testing:  const BACKEND_URL = 'http://localhost:5000';
 
         // ===== Dynamic Brands Loading =====
+        async function fetchWithRetry(url, retries = 3, delay = 3000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(url);
+                    if (res.ok) return res;
+                } catch (e) {
+                    if (i < retries - 1) await new Promise(r => setTimeout(r, delay));
+                }
+            }
+            return null;
+        }
+
         async function loadBrandsFromAPI() {
             const track = document.getElementById('brands-track');
             if (!track) return;
             try {
-                const res = await fetch(`${BACKEND_URL}/api/brands`);
+                const res = await fetchWithRetry(`${BACKEND_URL}/api/brands`);
+                if (!res) return;
                 const json = await res.json();
                 if (!json.success || !json.data.length) return; // keep skeleton if no data
 
@@ -1828,7 +1841,8 @@
             const grid = document.getElementById('certifications-grid');
             if (!grid) return;
             try {
-                const res = await fetch(`${BACKEND_URL}/api/certifications`);
+                const res = await fetchWithRetry(`${BACKEND_URL}/api/certifications`);
+                if (!res) return;
                 const json = await res.json();
                 if (!json.success || !json.data.length) return; // keep static if no data
 
