@@ -1381,6 +1381,18 @@ section {
     font-size: 3rem;
     margin-bottom: 1rem;
     transition: var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+}
+
+.brand-icon img {
+    width: 140px;
+    height: 80px;
+    object-fit: contain;
+    display: block;
+    background: transparent;
 }
 
 .brand-card:hover .brand-icon {
