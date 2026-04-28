@@ -1355,7 +1355,7 @@
             .dg-cell:hover img { transform: scale(1.06); filter: brightness(1); }
             .dg-cell.dg-placeholder { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); display: flex; align-items: center; justify-content: center; }
             .dg-cell.dg-placeholder::after { content: ''; }
-            .dg-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: 0.6rem 0.85rem; background: linear-gradient(to top, rgba(0,0,0,0.75), transparent); color: #fff; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.03em; opacity: 0; transition: opacity 0.3s; }
+            .dg-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: 0.6rem 0.85rem; background: linear-gradient(to top, rgba(0,0,0,0.78), transparent); color: #fff; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.03em; opacity: 1; transition: opacity 0.3s; text-shadow: 0 1px 2px rgba(0,0,0,0.35); }
             .dg-cell:hover .dg-caption { opacity: 1; }
             .dg-note { text-align: center; margin-top: 1.25rem; font-size: 0.78rem; color: #475569; }
             .dg-note code { background: #1e293b; padding: 0.1rem 0.4rem; border-radius: 4px; color: #94a3b8; }
@@ -1623,54 +1623,17 @@
 
             <div class="cert-rule" data-aos="fade-up"></div>
 
-            <div class="cert-list" id="certifications-grid" data-aos="fade-up">
-                <div class="cert-row">
-                    <span class="cert-tag">Official Partner</span>
-                    <div class="cert-details">
-                        <strong>Dept. of IT &amp; Electronics, UP</strong>
-                        <span>Backed by Department of Information Technology &amp; Electronics, Uttar Pradesh Government</span>
+            <div class="cert-marquee-wrap" data-aos="fade-up">
+                <div class="cert-fade-left"></div>
+                <div class="cert-fade-right"></div>
+                <div class="cert-marquee" aria-label="Certification logos">
+                    <div class="cert-track" id="certifications-grid">
+                        <div class="cert-slot cert-skeleton"></div>
+                        <div class="cert-slot cert-skeleton"></div>
+                        <div class="cert-slot cert-skeleton"></div>
+                        <div class="cert-slot cert-skeleton"></div>
+                        <div class="cert-slot cert-skeleton"></div>
                     </div>
-                    <span class="cert-year-badge">Govt. of UP</span>
-                </div>
-                <div class="cert-row">
-                    <span class="cert-tag">Certified Enterprise</span>
-                    <div class="cert-details">
-                        <strong>MSME Registered</strong>
-                        <span>Ministry of Micro, Small &amp; Medium Enterprises — भारत सरकार</span>
-                    </div>
-                    <span class="cert-year-badge">Govt. of India</span>
-                </div>
-                <div class="cert-row">
-                    <span class="cert-tag">Incubated</span>
-                    <div class="cert-details">
-                        <strong>GIMS Startup</strong>
-                        <span>Government Institute of Medical Sciences, Greater Noida — Center for Medical Innovation</span>
-                    </div>
-                    <span class="cert-year-badge">GIMS</span>
-                </div>
-                <div class="cert-row">
-                    <span class="cert-tag">Recognized Startup</span>
-                    <div class="cert-details">
-                        <strong>UP Start INUP</strong>
-                        <span>Startup Incubation &amp; Innovation Centre — Government of Uttar Pradesh</span>
-                    </div>
-                    <span class="cert-year-badge">UP Govt.</span>
-                </div>
-                <div class="cert-row">
-                    <span class="cert-tag">DPIIT Recognized</span>
-                    <div class="cert-details">
-                        <strong>Startup India</strong>
-                        <span>Department for Promotion of Industry &amp; Internal Trade — Government of India</span>
-                    </div>
-                    <span class="cert-year-badge">DPIIT</span>
-                </div>
-                <div class="cert-row">
-                    <span class="cert-tag">Certified 2024</span>
-                    <div class="cert-details">
-                        <strong>ISO 13485:2016</strong>
-                        <span>WRG Certifications — Medical Device Quality Management System</span>
-                    </div>
-                    <span class="cert-year-badge">ISO</span>
                 </div>
             </div>
 
@@ -1692,24 +1655,33 @@
             .cert-headline em { font-style: italic; font-weight: 300; color: #6366f1; }
             .cert-sub { font-size: 0.95rem; color: #6b7280; }
             .cert-rule { height: 1px; background: #d1d5db; margin: 2.5rem 0; }
-            .cert-list { display: flex; flex-direction: column; margin-bottom: 3rem; width: 100%; }
-            .cert-row { display: grid; grid-template-columns: minmax(0,120px) 1fr minmax(0,72px); gap: 1.25rem; align-items: center; padding: 1.4rem 0; border-bottom: 1px solid #e5e7eb; min-width: 0; }
-            .cert-row:first-child { border-top: 1px solid #e5e7eb; }
-            .cert-tag { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0ea5e9; word-break: break-word; }
-            .cert-details { min-width: 0; }
-            .cert-details strong { display: block; font-size: 0.95rem; font-weight: 700; color: #111827; margin-bottom: 0.2rem; line-height: 1.3; }
-            .cert-details span { font-size: 0.85rem; color: #6b7280; line-height: 1.5; }
-            .cert-year-badge { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; text-align: right; }
+            .cert-marquee-wrap { position: relative; overflow: hidden; margin-bottom: 3rem; }
+            .cert-fade-left, .cert-fade-right { position: absolute; top: 0; bottom: 0; width: 80px; z-index: 2; pointer-events: none; }
+            .cert-fade-left { left: 0; background: linear-gradient(to right, #f9f7f4, transparent); }
+            .cert-fade-right { right: 0; background: linear-gradient(to left, #f9f7f4, transparent); }
+            .cert-marquee { overflow: hidden; }
+            .cert-track { display: flex; gap: 1.25rem; width: max-content; animation: cert-scroll 60s linear infinite; }
+            .cert-track:hover { animation-play-state: paused; }
+            @keyframes cert-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+            .cert-slot { flex: 0 0 auto; width: 280px; min-height: 150px; padding: 1.1rem 1rem; background: #fff; border-radius: 18px; box-shadow: 0 10px 30px rgba(15,23,42,0.08); border: 1px solid rgba(148,163,184,0.18); display: flex; flex-direction: column; gap: 0.9rem; justify-content: center; }
+            .cert-slot-inner { display: flex; align-items: center; gap: 0.9rem; }
+            .cert-badge { width: 76px; height: 76px; flex: 0 0 auto; border-radius: 50%; background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%); border: 3px solid rgba(99,102,241,0.14); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 10px 24px rgba(99,102,241,0.12); }
+            .cert-badge img { width: 52px; height: 52px; object-fit: contain; display: block; }
+            .cert-seal { font-size: 1.9rem; font-weight: 800; color: #6366f1; line-height: 1; }
+            .cert-copy { min-width: 0; }
+            .cert-copy strong { display: block; font-size: 0.98rem; font-weight: 800; color: #111827; line-height: 1.3; margin-bottom: 0.2rem; }
+            .cert-copy span { display: block; font-size: 0.82rem; color: #6b7280; line-height: 1.45; }
+            .cert-year-badge { align-self: flex-start; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #0ea5e9; background: rgba(14,165,233,0.1); padding: 0.35rem 0.65rem; border-radius: 999px; }
+            .cert-skeleton { background: linear-gradient(90deg, #edf2f7 25%, #f8fafc 50%, #edf2f7 75%); background-size: 200% 100%; animation: cert-shimmer 1.5s infinite, cert-scroll 60s linear infinite; }
+            .cert-skeleton::before { content: ''; display: block; width: 100%; height: 100%; min-height: 128px; border-radius: 18px; background: linear-gradient(90deg, rgba(255,255,255,0.3) 25%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0.3) 75%); background-size: 200% 100%; animation: cert-shimmer 1.5s infinite; }
+            @keyframes cert-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
             .cert-banner { display: flex; align-items: center; gap: 1.25rem; padding: 1.5rem 2rem; background: #0d1117; border-radius: 16px; flex-wrap: wrap; }
             .cert-flag { font-size: 2rem; flex-shrink: 0; }
             .cert-banner strong { display: block; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem; }
             .cert-banner span { font-size: 0.85rem; color: #94a3b8; }
             @media (max-width: 640px) {
                 .cert-inner { padding: 0 1rem; }
-                .cert-row { grid-template-columns: 1fr auto; grid-template-areas: "tag badge" "details details"; gap: 0.4rem 0.75rem; }
-                .cert-tag { grid-area: tag; }
-                .cert-year-badge { grid-area: badge; text-align: right; }
-                .cert-details { grid-area: details; }
+                .cert-slot { width: 250px; }
                 .cert-banner { padding: 1.25rem 1.25rem; gap: 1rem; }
             }
         </style>
@@ -2355,7 +2327,9 @@
     <script>
         // ===== Backend API Configuration =====
         // const BACKEND_URL = 'https://dod-healthcare-api.onrender.com';
-        const BACKEND_URL = 'http://localhost:5000'; // local dev
+        const BACKEND_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+            ? 'http://localhost:5000'
+            : 'https://api.dodsmarthealth.com';
 
         function esc(s) {
             const d = document.createElement('div');
@@ -2404,16 +2378,23 @@
                 const json = await res.json();
                 if (!json.success || !json.data.length) return;
 
-                grid.innerHTML = json.data.map(c => `
-                    <div class="cert-row">
-                        <span class="cert-tag">${esc(c.sealEmoji || '🏆')}</span>
-                        <div class="cert-details">
-                            ${c.logoUrl ? `<img src="${esc(c.logoUrl)}" alt="${esc(c.title)}" style="width:36px;height:36px;object-fit:contain;margin-bottom:0.3rem;display:block;" loading="lazy">` : ''}
-                            <strong>${esc(c.title)}</strong>
-                            <span>${esc(c.description)}</span>
+                const slots = json.data.map(c => `
+                    <div class="cert-slot">
+                        <div class="cert-slot-inner">
+                            <div class="cert-badge">
+                                ${c.logoUrl
+                                    ? `<img src="${esc(c.logoUrl)}" alt="${esc(c.title)}" loading="lazy">`
+                                    : `<span class="cert-seal">${esc(c.sealEmoji || '🏆')}</span>`}
+                            </div>
+                            <div class="cert-copy">
+                                <strong>${esc(c.title)}</strong>
+                                <span>${esc(c.description)}</span>
+                            </div>
                         </div>
-                        <span class="cert-year-badge">${esc(c.year || '')}</span>
+                        ${c.year ? `<span class="cert-year-badge">${esc(c.year)}</span>` : '<span class="cert-year-badge">Verified</span>'}
                     </div>`).join('');
+
+                grid.innerHTML = slots + slots;
             } catch (err) {
                 console.warn('Certifications API error:', err.message);
             }
