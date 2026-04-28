@@ -24,16 +24,16 @@
                 <span></span>
             </button>
             <ul class="nav-links" id="navLinks">
-                <li><a href="#home" class="nav-link active">Home</a></li>
-                <li><a href="#features" class="nav-link">Features</a></li>
-                <li><a href="#capabilities" class="nav-link">Capabilities</a></li>
-                <li><a href="#howto" class="nav-link">How-To</a></li>
-                <li><a href="#specifications" class="nav-link">Specs</a></li>
-                <li><a href="#brands" class="nav-link">Partners</a></li>
-                <li><a href="#gallery-view" class="nav-link">Gallery</a></li>
-                <li><a href="#videos" class="nav-link">Videos</a></li>
-                <li><a href="#about" class="nav-link">About</a></li>
-                <li><a href="#contact" class="nav-link">Contact</a></li>
+                <li><a href="#home" class="nav-link active">#Home</a></li>
+                <li><a href="#features" class="nav-link">#Features</a></li>
+                <li><a href="#capabilities" class="nav-link">#Capabilities</a></li>
+                <li><a href="#howto" class="nav-link">#How-To</a></li>
+                <li><a href="#specifications" class="nav-link">#Specs</a></li>
+                <li><a href="#brands" class="nav-link">#Partners</a></li>
+                <li><a href="#gallery-view" class="nav-link">#Gallery</a></li>
+                <li><a href="#videos" class="nav-link">#Videos</a></li>
+                <li><a href="#about" class="nav-link">#About</a></li>
+                <li><a href="#contact" class="nav-link">#Contact</a></li>
 
             </ul>
         </div>
@@ -1664,7 +1664,7 @@
             .cert-track:hover { animation-play-state: paused; }
             @keyframes cert-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
             .cert-slot { flex: 0 0 auto; width: 280px; min-height: 150px; padding: 1.1rem 1rem; background: #fff; border-radius: 18px; box-shadow: 0 10px 30px rgba(15,23,42,0.08); border: 1px solid rgba(148,163,184,0.18); display: flex; flex-direction: column; gap: 0.9rem; justify-content: center; }
-            .cert-slot-inner { display: flex; align-items: center; gap: 0.9rem; }
+            .cert-slot-inner { display: flex; align-items: center; flex-direction: column; gap: 0.9rem; }
             .cert-badge { width: 76px; height: 76px; flex: 0 0 auto; border-radius: 50%; background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%); border: 3px solid rgba(99,102,241,0.14); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 10px 24px rgba(99,102,241,0.12); }
             .cert-badge img { width: 52px; height: 52px; object-fit: contain; display: block; }
             .cert-seal { font-size: 1.9rem; font-weight: 800; color: #6366f1; line-height: 1; }
@@ -2072,7 +2072,7 @@
         <div class="container">
             <div class="section-header fade-in">
                 <span class="section-badge">Get In Touch</span>
-                <h2 class="section-title">Contact <span class="gradient-text">Our Team</span></h2>
+                <h2 class="section-title">Connect <span class="gradient-text">With Us</span></h2>
                 <p class="section-subtitle">Let's discuss how we can transform healthcare in your community</p>
             </div>
 
@@ -2247,7 +2247,7 @@
                     <div class="footer-column">
                         <h4>Support</h4>
                         <ul>
-                            <li><a href="#contact">Contact Us</a></li>
+                            <li><a href="#contact">Get In Touch</a></li>
                             <li><a href="#">Documentation</a></li>
                             <li><a href="#">FAQs</a></li>
                             <li><a href="#">Privacy Policy</a></li>
@@ -2391,7 +2391,7 @@
                                 <span>${esc(c.description)}</span>
                             </div>
                         </div>
-                        ${c.year ? `<span class="cert-year-badge">${esc(c.year)}</span>` : '<span class="cert-year-badge">Verified</span>'}
+                        ${c.year ? `<span class="cert-year-badge">${esc(c.year)}</span>` : ''}
                     </div>`).join('');
 
                 grid.innerHTML = slots + slots;
