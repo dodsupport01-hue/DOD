@@ -163,7 +163,7 @@ button {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
+    padding: 1rem 1rem;
 }
 
 
@@ -2645,7 +2645,6 @@ textarea.form-input {
     }
     
     .hero-stats {
-        flex-direction: column;
         gap: 1.5rem;
     }
     

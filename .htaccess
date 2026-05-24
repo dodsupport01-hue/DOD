@@ -1,0 +1,144 @@
+# ════════════════════════════════════════════════════════════════
+# DOD Healthcare Kiosk - Production .htaccess
+# Performance + SEO + Security hardening
+# ════════════════════════════════════════════════════════════════
+
+# ───────── FORCE HTTPS + www → non-www ─────────
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Force HTTPS
+  RewriteCond %{HTTPS} off
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # www → non-www (pick ONE canonical hostname for SEO)
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^(.*)$ https://%1/$1 [L,R=301]
+
+  # Remove trailing index.html (canonicalize)
+  RewriteCond %{THE_REQUEST} \s/+(.*?)index\.html[\s?] [NC]
+  RewriteRule ^ /%1 [R=301,L]
+</IfModule>
+
+# ───────── GZIP / DEFLATE COMPRESSION ─────────
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+  AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
+  AddOutputFilterByType DEFLATE application/xml application/rss+xml application/atom+xml
+  AddOutputFilterByType DEFLATE image/svg+xml image/x-icon
+  AddOutputFilterByType DEFLATE font/ttf font/otf application/vnd.ms-fontobject
+</IfModule>
+
+# ───────── BROTLI (if available) ─────────
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css text/javascript
+  AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json application/xml
+  AddOutputFilterByType BROTLI_COMPRESS image/svg+xml
+</IfModule>
+
+# ───────── BROWSER CACHE (Expires) ─────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault                              "access plus 1 month"
+
+  # HTML
+  ExpiresByType text/html                     "access plus 0 seconds"
+  ExpiresByType application/xhtml+xml         "access plus 0 seconds"
+
+  # Data
+  ExpiresByType application/json              "access plus 0 seconds"
+  ExpiresByType application/xml               "access plus 0 seconds"
+  ExpiresByType text/xml                      "access plus 0 seconds"
+
+  # Manifest / Favicon
+  ExpiresByType application/manifest+json     "access plus 1 week"
+  ExpiresByType image/x-icon                  "access plus 1 month"
+  ExpiresByType image/vnd.microsoft.icon      "access plus 1 month"
+
+  # CSS / JS (1 year - bust via filename hash)
+  ExpiresByType text/css                      "access plus 1 year"
+  ExpiresByType text/javascript               "access plus 1 year"
+  ExpiresByType application/javascript        "access plus 1 year"
+
+  # Images (1 year)
+  ExpiresByType image/png                     "access plus 1 year"
+  ExpiresByType image/jpg                     "access plus 1 year"
+  ExpiresByType image/jpeg                    "access plus 1 year"
+  ExpiresByType image/gif                     "access plus 1 year"
+  ExpiresByType image/webp                    "access plus 1 year"
+  ExpiresByType image/avif                    "access plus 1 year"
+  ExpiresByType image/svg+xml                 "access plus 1 year"
+
+  # Fonts (1 year)
+  ExpiresByType font/ttf                      "access plus 1 year"
+  ExpiresByType font/otf                      "access plus 1 year"
+  ExpiresByType font/woff                     "access plus 1 year"
+  ExpiresByType font/woff2                    "access plus 1 year"
+  ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+
+  # Video (1 month)
+  ExpiresByType video/mp4                     "access plus 1 month"
+  ExpiresByType video/webm                    "access plus 1 month"
+</IfModule>
+
+# ───────── CACHE-CONTROL HEADERS ─────────
+<IfModule mod_headers.c>
+  # Long cache for hashed assets
+  <FilesMatch "\.(css|js|jpg|jpeg|png|gif|webp|avif|svg|woff|woff2|ttf|otf|eot|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # No cache for HTML
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # ───────── SECURITY HEADERS ─────────
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set X-XSS-Protection "1; mode=block"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+  # Remove server signature
+  Header unset X-Powered-By
+  Header unset Server
+</IfModule>
+
+# ───────── KEEP-ALIVE ─────────
+<IfModule mod_headers.c>
+  Header set Connection keep-alive
+</IfModule>
+
+# ───────── MIME TYPES ─────────
+<IfModule mod_mime.c>
+  AddType image/webp                          .webp
+  AddType image/avif                          .avif
+  AddType image/svg+xml                       .svg
+  AddType application/manifest+json           .webmanifest
+  AddType font/woff2                          .woff2
+  AddType font/woff                           .woff
+</IfModule>
+
+# ───────── CUSTOM ERROR PAGES ─────────
+ErrorDocument 404 /index.html
+
+# ───────── SECURITY: block sensitive files ─────────
+<FilesMatch "(^\.|\.(bak|config|sql|fla|psd|ini|log|sh|inc|swp|dist|env)$|^#.*#$|\.~$)">
+  Order allow,deny
+  Deny from all
+  Satisfy All
+</FilesMatch>
+
+<Files .htaccess>
+  Order allow,deny
+  Deny from all
+</Files>
+
+# ───────── DISABLE DIRECTORY LISTING ─────────
+Options -Indexes
+
+# ───────── DEFAULT CHARSET ─────────
+AddDefaultCharset UTF-8

@@ -1,0 +1,29 @@
+﻿{
+  "name": "DOD Health Kiosk - Digital Swasthya Kendra",
+  "short_name": "DOD Health",
+  "description": "India's #1 AI-powered Health Kiosk by Amazemedics Pvt. Ltd. - ECG, BP, Sugar, Vision, PFT & Live Video Consultation with specialist doctors.",
+  "start_url": "/?utm_source=pwa",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "scope": "/",
+  "categories": ["medical", "health", "healthcare", "business"],
+  "icons": [
+    {"src": "logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "logo.png", "sizes": "256x256", "type": "image/png", "purpose": "any"},
+    {"src": "logo.png", "sizes": "384x384", "type": "image/png", "purpose": "any"},
+    {"src": "logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ],
+  "screenshots": [
+    {"src": "kiosk-screen.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "DOD Kiosk Screen"}
+  ],
+  "shortcuts": [
+    {"name": "Features", "url": "/#features", "description": "Explore kiosk features"},
+    {"name": "Contact", "url": "/#contact", "description": "Get in touch"},
+    {"name": "Gallery", "url": "/#gallery-view", "description": "View installations"}
+  ],
+  "prefer_related_applications": false
+}

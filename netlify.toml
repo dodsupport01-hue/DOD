@@ -1,45 +1,164 @@
-# Netlify deployment config for dodsmarthealth.com
+# =====================================================
+# Netlify config for dodsmarthealth.com
+# SEO + Performance + Security hardened
+# =====================================================
 
 [build]
   publish = "."
 
+# ----- Global security + perf headers -----
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    X-Frame-Options = "SAMEORIGIN"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(self)"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
 
+# ----- HTML: never cache (so SEO updates land immediately) -----
 [[headers]]
-  for = "/*.css"
+  for = "/*.html"
   [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
   for = "/index.html"
   [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
-# Redirect www to non-www
+# ----- Images: long cache + immutable -----
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ----- Fonts -----
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/*.woff"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ----- CSS / JS: must-revalidate (no filename hashing yet) -----
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+
+# ----- SEO files -----
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+    Content-Type = "application/xml; charset=utf-8"
+
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+    Content-Type = "text/plain; charset=utf-8"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+    Content-Type = "application/manifest+json"
+
+# ----- Force HTTPS + canonicalize host (www -> non-www) -----
+[[redirects]]
+  from = "http://dodsmarthealth.com/*"
+  to   = "https://dodsmarthealth.com/:splat"
+  status = 301
+  force  = true
+
 [[redirects]]
   from = "https://www.dodsmarthealth.com/*"
   to   = "https://dodsmarthealth.com/:splat"
   status = 301
   force  = true
 
-# Admin panel route
+[[redirects]]
+  from = "http://www.dodsmarthealth.com/*"
+  to   = "https://dodsmarthealth.com/:splat"
+  status = 301
+  force  = true
+
+# ----- Pretty SEO URLs -> hash anchors -----
+[[redirects]]
+  from = "/features"
+  to   = "/#features"
+  status = 301
+
+[[redirects]]
+  from = "/contact"
+  to   = "/#contact"
+  status = 301
+
+[[redirects]]
+  from = "/gallery"
+  to   = "/#gallery-view"
+  status = 301
+
+[[redirects]]
+  from = "/about"
+  to   = "/#about"
+  status = 301
+
+[[redirects]]
+  from = "/videos"
+  to   = "/#videos"
+  status = 301
+
+# Admin panel
 [[redirects]]
   from = "/admin"
   to   = "/admin/index.html"
   status = 200
 
-# SPA fallback (keep last)
+# Well-known security
+[[redirects]]
+  from = "/.well-known/security.txt"
+  to   = "/security.txt"
+  status = 200
+
+# SPA fallback (KEEP LAST)
 [[redirects]]
   from = "/*"
   to   = "/index.html"

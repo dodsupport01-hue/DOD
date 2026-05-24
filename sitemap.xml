@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+
+  <url>
+    <loc>https://dodsmarthealth.com/</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en-IN" href="https://dodsmarthealth.com/"/>
+    <xhtml:link rel="alternate" hreflang="hi-IN" href="https://dodsmarthealth.com/?lang=hi"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://dodsmarthealth.com/"/>
+    <image:image>
+      <image:loc>https://dodsmarthealth.com/logo.png</image:loc>
+      <image:title>DOD Healthcare Kiosk Logo - Amazemedics</image:title>
+      <image:caption>Official logo of DOD Health Kiosk by Amazemedics Pvt. Ltd.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://dodsmarthealth.com/kiosk-screen.png</image:loc>
+      <image:title>DOD Health Kiosk Touch Screen Interface</image:title>
+      <image:caption>India's leading AI-powered Digital Swasthya Kendra touch interface</image:caption>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#features</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#capabilities</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#manual</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#howto</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#specifications</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#brands</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#gallery-view</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#videos</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#about</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://dodsmarthealth.com/#contact</loc>
+    <lastmod>2026-05-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+</urlset>
