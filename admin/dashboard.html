@@ -611,6 +611,8 @@
       <input type="hidden" id="teamEditId" />
       <div><label class="form-label">Full Name *</label><input type="text" class="form-input" id="teamName" placeholder="e.g. Dr. Ankit Sharma" /></div>
       <div><label class="form-label">Designation / Role *</label><input type="text" class="form-input" id="teamDesignation" placeholder="e.g. Chief Medical Officer" /></div>
+      <div><label class="form-label">Mobile Number <span style="font-weight:400;color:#64748b;">(10 digits only)</span></label><input type="tel" class="form-input" id="teamMobile" placeholder="9876543210" maxlength="10" inputmode="numeric" pattern="\d{10}" /></div>
+      <div><label class="form-label">Email Address</label><input type="email" class="form-input" id="teamEmail" placeholder="name@example.com" /></div>
       <div><label class="form-label">Description</label><textarea class="form-textarea" id="teamDescription" placeholder="Brief bio or role description..."></textarea></div>
       <div><label class="form-label">Display Order</label><input type="number" class="form-input" id="teamOrder" placeholder="0" min="0" /></div>
       <div>
@@ -1372,6 +1374,8 @@ function openTeamModal(member = null) {
   document.getElementById('teamModalTitle').textContent = member ? 'Edit Team Member' : 'Add Team Member';
   document.getElementById('teamName').value = member ? member.name : '';
   document.getElementById('teamDesignation').value = member ? member.designation : '';
+  document.getElementById('teamMobile').value = member ? (member.mobile || '') : '';
+  document.getElementById('teamEmail').value = member ? (member.email || '') : '';
   document.getElementById('teamDescription').value = member ? (member.description || '') : '';
   document.getElementById('teamOrder').value = member ? member.order : 0;
   document.getElementById('teamActive').value = member ? String(member.isActive) : 'true';
@@ -1390,13 +1394,18 @@ async function saveTeamMember() {
   const id = document.getElementById('teamEditId').value;
   const name = document.getElementById('teamName').value.trim();
   const designation = document.getElementById('teamDesignation').value.trim();
+  const mobile = document.getElementById('teamMobile').value.trim().replace(/\D/g, '');
+  const email = document.getElementById('teamEmail').value.trim();
   if (!name) { showModalAlert('teamModalAlert', 'Name is required.'); return; }
   if (!designation) { showModalAlert('teamModalAlert', 'Designation is required.'); return; }
+  if (mobile && mobile.length !== 10) { showModalAlert('teamModalAlert', 'Mobile number must be exactly 10 digits.'); return; }
   const btn = document.getElementById('saveTeamBtn');
   btn.disabled = true; btn.textContent = 'Saving...';
   const fd = new FormData();
   fd.append('name', name);
   fd.append('designation', designation);
+  fd.append('mobile', mobile);
+  fd.append('email', email);
   fd.append('description', document.getElementById('teamDescription').value);
   fd.append('order', document.getElementById('teamOrder').value || 0);
   fd.append('isActive', document.getElementById('teamActive').value);

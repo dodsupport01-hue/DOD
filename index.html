@@ -3848,63 +3848,58 @@
                         <p>Our Experienced Professionals Are Dedicated To Delivering Excellence, Innovation, And Outstanding Results For Our Clients.</p>
                     </div>
 
-                    <div class="leadership-grid">
-                        <div class="leader-card">
-                            <div class="leader-img-wrapper">
-                                <img src="img/shrey.jpeg" alt="Dr. Shrey Srivastav" />
-                            </div>
-                            <div class="leader-info">
-                                <h3 class="leader-name">Dr. Shrey Srivastav</h3>
-                                <p class="leader-role">CEO &amp; Co-founder</p>
-                                <div class="leader-contact">
-                                    <span>+91-7011648922</span>
-                                    <span>shrey@dodind.com</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="leader-card">
-                            <div class="leader-img-wrapper">
-                                <img src="img/prsnt.jpeg" alt="Dr. Prashant Swarnkar" />
-                            </div>
-                            <div class="leader-info">
-                                <h3 class="leader-name">Dr. Prashant Swarnkar</h3>
-                                <p class="leader-role">COO &amp; Co-founder</p>
-                                <div class="leader-contact">
-                                    <span>+91-8587898566</span>
-                                    <span>prashant@dodind.com</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="leader-card">
-                            <div class="leader-img-wrapper">
-                                <img src="https://ui-avatars.com/api/?name=Manoranjan+Sati&background=random" alt="Mr. Manoranjan Sati Prasad" />
-                            </div>
-                            <div class="leader-info">
-                                <h3 class="leader-name">Mr. Manoranjan Sati</h3>
-                                <p class="leader-role">Director Sales</p>
-                                <div class="leader-contact">
-                                    <span>9910224902</span>
-                                    <span>manoranjansati@gmail.com</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="leader-card">
-                            <div class="leader-img-wrapper">
-                                <img src="https://ui-avatars.com/api/?name=Vivek+Kumar&background=random" alt="Mr. Vivek Kumar" />
-                            </div>
-                            <div class="leader-info">
-                                <h3 class="leader-name">Mr. Vivek Kumar</h3>
-                                <p class="leader-role">Chief Product Officer</p>
-                                <div class="leader-contact">
-                                    <span>+91-7903586655</span>
-                                    <span>vivek@dodind.co</span>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="leadership-grid" id="leadershipGrid">
+                        <!-- Skeleton placeholders -->
+                        <div class="leader-skeleton"></div>
+                        <div class="leader-skeleton"></div>
+                        <div class="leader-skeleton"></div>
+                        <div class="leader-skeleton"></div>
                     </div>
+                    <style>
+                        .leader-skeleton {
+                            background: #e5e7eb;
+                            border-radius: 16px;
+                            height: 220px;
+                            animation: lsk-pulse 1.4s ease-in-out infinite;
+                        }
+                        @keyframes lsk-pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+                    </style>
+                    <script>
+                    (function(){
+                        var API = window.BACKEND_URL ? window.BACKEND_URL + '/api'
+                            : (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+                                ? 'http://localhost:5000/api' : 'https://api.dodsmarthealth.com/api');
+                        fetch(API + '/team')
+                            .then(function(r){ return r.json(); })
+                            .then(function(resp){
+                                var grid = document.getElementById('leadershipGrid');
+                                if (!resp.success || !resp.data || !resp.data.length) {
+                                    grid.innerHTML = '<p style="color:#6b7280;text-align:center;grid-column:1/-1;">Team information coming soon.</p>';
+                                    return;
+                                }
+                                grid.innerHTML = resp.data.map(function(m){
+                                    var initials = m.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+                                    var img = m.imageUrl
+                                        ? '<img src="' + m.imageUrl + '" alt="' + m.name + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" /><span class="leader-initials" style="display:none;">' + initials + '</span>'
+                                        : '<span class="leader-initials">' + initials + '</span>';
+                                    var contact = '';
+                                    if (m.mobile) contact += '<a href="tel:+91' + m.mobile + '" class="leader-contact-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.09 9a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>' + m.mobile + '</a>';
+                                    if (m.email) contact += '<a href="mailto:' + m.email + '" class="leader-contact-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' + m.email + '</a>';
+                                    return '<div class="leader-card">'
+                                        + '<div class="leader-img-wrapper">' + img + '</div>'
+                                        + '<div class="leader-info">'
+                                            + '<h3 class="leader-name">' + m.name + '</h3>'
+                                            + '<p class="leader-role">' + m.designation + '</p>'
+                                            + (contact ? '<div class="leader-contact">' + contact + '</div>' : '')
+                                        + '</div>'
+                                    + '</div>';
+                                }).join('');
+                            })
+                            .catch(function(){
+                                /* silently keep skeletons on API failure */
+                            });
+                    })();
+                    </script>
                 </div>
             </div>
         </section>

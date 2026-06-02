@@ -687,7 +687,7 @@ button {
     width: 24px;
     height: 40px;
     border: 2px solid var(--text-secondary);
-    border-radius: 12px;
+    border-radius: 10px;
     position: relative;
 }
 

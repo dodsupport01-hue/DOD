@@ -28,13 +28,18 @@ router.get('/all', protect, async (req, res) => {
 // POST /api/team  (ADMIN)
 router.post('/', protect, uploadTeam.single('image'), async (req, res) => {
   try {
-    const { name, designation, description, order, isActive } = req.body;
+    const { name, designation, mobile, email, description, order, isActive } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
     if (!designation) return res.status(400).json({ success: false, message: 'Designation is required' });
+    if (mobile && !/^\d{10}$/.test(mobile.replace(/\s/g, ''))) {
+      return res.status(400).json({ success: false, message: 'Mobile must be exactly 10 digits' });
+    }
 
     const member = await TeamMember.create({
       name,
       designation,
+      mobile: mobile || '',
+      email: email || '',
       description: description || '',
       imageUrl: req.file ? req.file.path : '',
       cloudinaryPublicId: req.file ? req.file.filename : '',
@@ -53,9 +58,14 @@ router.put('/:id', protect, uploadTeam.single('image'), async (req, res) => {
     const member = await TeamMember.findById(req.params.id);
     if (!member) return res.status(404).json({ success: false, message: 'Team member not found' });
 
-    const { name, designation, description, order, isActive } = req.body;
+    const { name, designation, mobile, email, description, order, isActive } = req.body;
+    if (mobile !== undefined && mobile !== '' && !/^\d{10}$/.test(mobile.replace(/\s/g, ''))) {
+      return res.status(400).json({ success: false, message: 'Mobile must be exactly 10 digits' });
+    }
     if (name) member.name = name;
     if (designation) member.designation = designation;
+    if (mobile !== undefined) member.mobile = mobile;
+    if (email !== undefined) member.email = email;
     if (description !== undefined) member.description = description;
     if (order !== undefined) member.order = parseInt(order);
     if (isActive !== undefined) member.isActive = isActive === 'true' || isActive === true;
