@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"d:\\\\websitem\\\\DOD\"; $content = [System.IO.File]::ReadAllText\\('index.html', [System.Text.Encoding]::UTF8\\); $idx = $content.IndexOf\\('YOUTUBE VIDEOS'\\); $content.Substring\\($idx - 10, 80\\) | Format-List)"
+    ]
+  }
+}

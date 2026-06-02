@@ -10,6 +10,8 @@ const certificationsRoutes = require('./routes/certifications');
 const galleryRoutes = require('./routes/gallery');
 const videosRoutes = require('./routes/videos');
 const mediaRoutes = require('./routes/media');
+const teamRoutes = require('./routes/team');
+const localVideosRoutes = require('./routes/localVideos');
 const { seedAdmin } = require('./utils/seed');
 
 const app = express();
@@ -38,7 +40,7 @@ app.use(cors({
 
 // ─── Body Parsers ───────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '250mb' }));
 
 // ─── Static (serve admin panel) ─────────────────────────────────────────────
 app.use('/admin', express.static(path.join(__dirname, '../admin')));
@@ -55,6 +57,8 @@ app.use('/api/certifications', certificationsRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/videos', videosRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/local-videos', localVideosRoutes);
 
 // ─── 404 ────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

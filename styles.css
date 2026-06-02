@@ -38,7 +38,7 @@
     --border-radius-xl: 2rem;
     
     --container-width: 1280px;
-    --section-padding: 6rem 2rem;
+    --section-padding: 2rem 2rem;
 }
 
 /* ===== Reset & Base Styles ===== */
@@ -94,7 +94,7 @@ button {
 .container {
     max-width: var(--container-width);
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 0rem;
 }
 
 .gradient-text {
@@ -172,7 +172,6 @@ button {
     align-items: center;
     gap: 0.5rem;
     font-size: 1.5rem;
-    width: 25%;
 
 }
 .nav-links {
@@ -232,7 +231,7 @@ button {
     min-height: 100vh;
     display: flex;
     align-items: center;
-    padding-top: 10rem;
+    padding-top: 6rem;
     overflow: hidden;
 }
 
@@ -363,8 +362,26 @@ button {
 .hero-subtitle {
     font-size: 1.25rem;
     color: var(--text-secondary);
-    margin-bottom: 2.5rem;
+    margin-bottom: 1rem;
     line-height: 1.8;
+}
+
+.hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.hero-tag {
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 .hero-buttons {
@@ -458,6 +475,88 @@ button {
     margin-top: 0.5rem;
 }
 
+/* ── AI Feature Pointers ── */
+.hero-ai-pointers {
+    margin-top: 1.75rem;
+    /* Fixed height = icon (32px) + gap (10px) + text row (24px) + bottom pad = ~72px */
+    height: 72px;
+    display: flex;
+    align-items: center;
+}
+
+.ai-pointer-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(99, 102, 241, 0.10);
+    border: 1px solid rgba(99, 102, 241, 0.30);
+    border-radius: 12px;
+    padding: 0.6rem 1.1rem;
+    min-width: 0;
+    width: 100%;
+    max-width: 480px;
+    backdrop-filter: blur(4px);
+}
+
+.ai-pointer-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #6366f1, #0ea5e9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ai-pointer-icon svg {
+    width: 16px;
+    height: 16px;
+    color: #fff;
+    stroke: #fff;
+}
+
+.ai-pointer-text-wrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.ai-pointer-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #818cf8;
+    line-height: 1;
+    margin-bottom: 3px;
+}
+
+.ai-pointer-typed {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    white-space: nowrap;
+    overflow: hidden;
+    line-height: 1.4;
+}
+
+.ai-pointer-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: #6366f1;
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: ai-blink 0.75s step-end infinite;
+}
+
+@keyframes ai-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+
 .hero-image {
     position: relative;
     animation-delay: 0.4s;
@@ -473,7 +572,7 @@ button {
 .mockup-screen {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 2rem;
-    padding: 2rem;
+    padding: 1rem;
     box-shadow: var(--shadow-2xl);
     /* animation: float 6s ease-in-out infinite; */
 }
@@ -481,7 +580,7 @@ button {
 .screen-content {
     background: white;
     border-radius: 1.5rem;
-    aspect-ratio: 8/16;
+    aspect-ratio: 8/10;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -534,12 +633,13 @@ button {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1rem 1.5rem;
+    padding: 0.6rem 0.8rem;
     background: white;
     border-radius: var(--border-radius-md);
     box-shadow: var(--shadow-xl);
     font-weight: 600;
     animation: float 4s ease-in-out infinite;
+    font-size:12px;
 }
 
 .card-1 {

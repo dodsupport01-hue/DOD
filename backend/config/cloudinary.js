@@ -53,13 +53,44 @@ const uploadGallery = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
-const deleteFromCloudinary = async (publicId) => {
+// Storage for team member photos
+const teamStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'dod-healthcare/team',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 'auto', fetch_format: 'auto' }],
+  },
+});
+
+const uploadTeam = multer({
+  storage: teamStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+});
+
+// Storage for local showcase videos
+const videoStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'dod-healthcare/local-videos',
+    resource_type: 'video',
+    allowed_formats: ['mp4', 'mov', 'webm', 'avi'],
+    // No eager transformations — stream originals for best quality
+  },
+});
+
+const uploadVideo = multer({
+  storage: videoStorage,
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200 MB
+});
+
+const deleteFromCloudinary = async (publicId, resourceType = 'image') => {
   if (!publicId) return;
   try {
-    await cloudinary.uploader.destroy(publicId);
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
   } catch (err) {
     console.error('Cloudinary delete error:', err.message);
   }
 };
 
-module.exports = { cloudinary, uploadBrand, uploadCert, uploadGallery, deleteFromCloudinary };
+module.exports = { cloudinary, uploadBrand, uploadCert, uploadGallery, uploadTeam, uploadVideo, deleteFromCloudinary };

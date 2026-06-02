@@ -107,7 +107,7 @@
         <link rel="dns-prefetch" href="https://www.youtube.com" />
         <link rel="dns-prefetch" href="https://i.ytimg.com" />
         <link rel="preload" as="image" href="logo.png" fetchpriority="high" />
-        <link rel="preload" as="image" href="kiosk-screen.png" fetchpriority="high" />
+        <link rel="preload" as="image" href="image.jpeg" fetchpriority="high" />
         <link rel="preload" as="style" href="styles.css" />
         <link rel="preload" as="style" href="styles-additions.css" />
 
@@ -462,19 +462,77 @@
             </div>
             <div class="container hero-container">
                 <div class="hero-content fade-in-up">
-                    <div class="hero-badge">
-                        <span>Made in Noida, India | Digital Swasthya Kendra | Delhi NCR</span>
-                    </div>
+
                     <h1 class="hero-title">
-                        <span class="title-line">Swasthya Bharat,</span>
-                        <span class="title-line gradient-text">Samarth Bharat</span>
-                        <span class="title-line">Bringing Specialist Care to Every Citizen</span>
+                        <span class="title-line gradient-text">DOD Smart Health Kiosk</span>
                     </h1>
+                        <div class="hero-badge">
+                        <span>Made in India | India's #1 AI Powered | Digital Swasthya Kendra</span>
+                    </div>
                     <p class="hero-subtitle">
-                        <strong>DOD Health Kiosk</strong> by Amazemedics - <strong>#1 Health Kiosk Manufacturer in Noida &amp; Delhi NCR.</strong> AI-powered <em>Digital Swasthya Kendra</em> with
-                        12-lead ECG, BP, blood sugar, vision, PFT and live video consultation with specialist doctors. Serving Noida, Greater Noida, Ghaziabad, Gurugram and pan-India. Healthcare in
-                        the hands of every citizen.
+                        AI-powered health kiosk with 12-lead ECG, BP, blood sugar, vision &amp; live doctor consultation.
                     </p>
+                    <!-- AI Feature Highlights -->
+                    <div class="hero-ai-pointers">
+                        <div class="ai-pointer-display">
+                            <div class="ai-pointer-icon" id="aiPointerIcon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                            </div>
+                            <div class="ai-pointer-text-wrap">
+                                <span class="ai-pointer-label" id="aiPointerLabel">Risk Prediction</span>
+                                <span class="ai-pointer-typed" id="aiPointerTyped"><span class="ai-pointer-cursor"></span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                    (function(){
+                        var items = [
+                            { label: "Risk Prediction", text: "Clinical Risk Prediction Model (CRPM)", icon: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>' },
+                            { label: "Diet Planning",   text: "AI Generated Diet Chart Plan",          icon: '<path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M8 12h8M12 8v8"/>' },
+                            { label: "Oral Health",     text: "AI Oral Health Assessment",             icon: '<circle cx="12" cy="12" r="3"/><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>' }
+                        ];
+                        var cur = 0, charIdx = 0, typing = true;
+                        var typedEl = document.getElementById('aiPointerTyped');
+                        var labelEl = document.getElementById('aiPointerLabel');
+                        var iconEl  = document.getElementById('aiPointerIcon');
+                        var CURSOR  = '<span class="ai-pointer-cursor"></span>';
+                        var T_TYPE  = 42, T_ERASE = 22, T_PAUSE = 2400, T_START = 380;
+                        function setIcon(svg){ iconEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + svg + '</svg>'; }
+                        function render(t){ typedEl.innerHTML = t + CURSOR; }
+                        function tick(){
+                            var item = items[cur];
+                            if(typing){
+                                charIdx++;
+                                render(item.text.slice(0, charIdx));
+                                if(charIdx >= item.text.length){ typing = false; setTimeout(tick, T_PAUSE); return; }
+                                setTimeout(tick, T_TYPE);
+                            } else {
+                                charIdx--;
+                                render(item.text.slice(0, charIdx));
+                                if(charIdx <= 0){
+                                    cur = (cur + 1) % items.length;
+                                    labelEl.textContent = items[cur].label;
+                                    setIcon(items[cur].icon);
+                                    typing = true;
+                                    setTimeout(tick, T_START);
+                                    return;
+                                }
+                                setTimeout(tick, T_ERASE);
+                            }
+                        }
+                        setTimeout(tick, 900);
+                    })();
+                    </script>
+                    <div class="hero-tags">
+                        <span class="hero-tag">🫀 ECG</span>
+                        <span class="hero-tag">🩸 BP &amp; Sugar</span>
+                        <span class="hero-tag">👁️ Vision Test</span>
+                        <span class="hero-tag">🫁 PFT</span>
+                        <span class="hero-tag">🩺 Telemedicine</span>
+                        <span class="hero-tag">🤖 AI Nutrition</span>
+                        <span class="hero-tag">🇮🇳 Made in India</span>
+                    </div>
+                    
                     <div class="hero-buttons">
                         <a href="#features" class="btn btn-primary">
                             <span>Explore Features</span>
@@ -498,13 +556,6 @@
                             </div>
                             <span class="stat-label">Installations</span>
                         </div>
-                        <div class="stat-item">
-                            <div class="stat-separator">
-                                <span class="stat-number" data-target="98">0</span>
-                                <span class="stat-suffix">%</span>
-                            </div>
-                            <span class="stat-label">Uptime</span>
-                        </div>
 
                         <div class="stat-item">
                             <div class="stat-separator">
@@ -513,7 +564,15 @@
                             </div>
                             <span class="stat-label">Support</span>
                         </div>
+                        <div class="stat-item">
+                            <div class="stat-separator">
+                                <span class="stat-number" data-target="200">0</span>
+                                <span class="stat-suffix">+</span>
+                            </div>
+                            <span class="stat-label">DOD Certified Doctors</span>
+                        </div>
                     </div>
+
                 </div>
                 <div class="hero-image fade-in-right">
                     <div class="kiosk-mockup">
@@ -521,7 +580,7 @@
                         <div class="mockup-screen">
                             <div class="screen-content">
                                 <img
-                                    src="kiosk-screen.png"
+                                    src="image.jpeg"
                                     alt="DOD Health Kiosk touch-screen interface showing ECG, BP, vitals & video consultation - Made in India"
                                     class="kiosk-screen-img"
                                     width="800"
@@ -2192,7 +2251,7 @@
             <style>
                 .howto {
                     background: #f9f7f4;
-                    padding: 7rem 2rem 8rem;
+                    padding: 2rem 2rem 2rem 2rem;
                 }
                 .ht-inner {
                     max-width: 1100px;
@@ -2720,6 +2779,80 @@
                         if (e.key === "ArrowRight") dgNavLb(1);
                     });
                 })();
+            </script>
+        </section>
+
+        <!-- === LOCAL VIDEOS SHOWCASE === -->
+        <section class="lv-section" id="local-videos">
+            <style>
+                .lv-section { background: linear-gradient(135deg, #0d1117 0%, #1e1b4b 100%); padding: 7rem 2rem 8rem; }
+                .lv-inner { max-width: 1100px; margin: 0 auto; }
+                .lv-header { text-align: center; margin-bottom: 3.5rem; }
+                .lv-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #6366f1; display: block; margin-bottom: 0.75rem; }
+                .lv-headline { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; color: #fff; line-height: 1.15; margin-bottom: 0.6rem; }
+                .lv-headline em { font-style: italic; font-weight: 300; color: #818cf8; }
+                .lv-sub { font-size: 1rem; color: #94a3b8; }
+                .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.75rem; }
+                .lv-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; }
+                .lv-card:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(99,102,241,0.25); }
+                .lv-video-wrap { position: relative; width: 100%; aspect-ratio: 16/9; background: #0d1117; }
+                .lv-video-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+                .lv-meta { padding: 1.25rem 1.5rem 1.5rem; }
+                .lv-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; background: rgba(99,102,241,0.2); color: #818cf8; margin-bottom: 0.6rem; }
+                .lv-meta h3 { font-size: 1rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.3rem; }
+                .lv-meta p { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+                @media (max-width: 600px) { .lv-section { padding: 4rem 1rem 5rem; } .lv-grid { grid-template-columns: 1fr; } }
+            </style>
+            <div class="lv-inner">
+                <div class="lv-header" data-aos="fade-up">
+                    <span class="lv-eyebrow">DOD In Action</span>
+                    <h2 class="lv-headline">See the <em>Kiosk Live</em></h2>
+                    <p class="lv-sub">Real demonstrations of DOD Health Kiosk features and capabilities</p>
+                </div>
+                <div class="lv-grid" id="localVideosGrid" data-aos="fade-up">
+                    <!-- Loaded dynamically from API -->
+                    <div class="lv-skeleton"></div>
+                    <div class="lv-skeleton"></div>
+                    <div class="lv-skeleton"></div>
+                </div>
+            </div>
+            <style>
+                .lv-skeleton { background: rgba(255,255,255,0.07); border-radius: 18px; aspect-ratio: 16/9; animation: lv-pulse 1.4s ease-in-out infinite; }
+                @keyframes lv-pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+            </style>
+            <script>
+            (function(){
+                var API = (window.BACKEND_URL ? window.BACKEND_URL + '/api' : (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') ? 'http://localhost:5000/api' : 'https://api.dodsmarthealth.com/api'));
+                fetch(API + '/local-videos')
+                    .then(function(r){ return r.json(); })
+                    .then(function(resp){
+                        var grid = document.getElementById('localVideosGrid');
+                        if (!resp.success || !resp.data || !resp.data.length) {
+                            grid.style.display = 'none'; return;
+                        }
+                        grid.innerHTML = resp.data.map(function(v){
+                            return '<div class="lv-card">' +
+                                '<div class="lv-video-wrap">' +
+                                    '<video controls preload="none" playsinline' +
+                                    (v.thumbnailUrl ? ' poster="' + v.thumbnailUrl + '"' : '') +
+                                    ' aria-label="' + (v.title || 'DOD Video') + '">' +
+                                        '<source src="' + v.videoUrl + '" type="video/mp4" />' +
+                                    '</video>' +
+                                '</div>' +
+                                '<div class="lv-meta">' +
+                                    (v.badge ? '<span class="lv-badge">' + v.badge + '</span>' : '') +
+                                    '<h3>' + v.title + '</h3>' +
+                                    (v.description ? '<p>' + v.description + '</p>' : '') +
+                                '</div>' +
+                            '</div>';
+                        }).join('');
+                    })
+                    .catch(function(){
+                        /* silently hide section if API unreachable */
+                        var s = document.getElementById('local-videos');
+                        if (s) s.style.display = 'none';
+                    });
+            })();
             </script>
         </section>
 
@@ -4047,19 +4180,6 @@
                                 <div class="info-item">
                                     <div class="info-icon">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-                                            <circle cx="12" cy="12" r="10" />
-                                            <line x1="2" y1="12" x2="22" y2="12" />
-                                            <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div class="info-title">Website</div>
-                                        <div class="info-text"><a href="https://www.dodind.com" target="_blank" rel="noopener">www.dodind.com</a></div>
-                                    </div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="info-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
                                             <rect x="2" y="4" width="20" height="16" rx="2" />
                                             <path d="m22 7-8.97 5.7a1.94 1.94 0 01-2.06 0L2 7" />
                                         </svg>
@@ -4081,18 +4201,6 @@
                                     <div>
                                         <div class="info-title">Support</div>
                                         <div class="info-text"><a href="mailto:support@dodind.com">support@dodind.com</a></div>
-                                    </div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="info-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-                                            <rect x="2" y="7" width="20" height="14" rx="2" />
-                                            <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div class="info-title">Business Queries</div>
-                                        <div class="info-text">For partnerships and opportunities</div>
                                     </div>
                                 </div>
                                 <div class="info-item">
@@ -4135,7 +4243,7 @@
                                     <option value="payment">Payment Processing</option>
                                     <option value="telemedicine">Telemedicine Support</option>
                                 </select>
-                                <textarea class="form-textarea" name="message" rows="5" placeholder="Your Message" aria-label="Your Message" required></textarea>
+                                <textarea class="form-textarea" name="message" rows="3" placeholder="Your Message" aria-label="Your Message" required></textarea>
                                 <div class="form-hint">By submitting, you agree to be contacted regarding DOD solutions.</div>
                                 <button type="submit" class="btn btn-primary btn-submit">
                                     <span>Send Message</span>
