@@ -611,7 +611,13 @@
       <input type="hidden" id="teamEditId" />
       <div><label class="form-label">Full Name *</label><input type="text" class="form-input" id="teamName" placeholder="e.g. Dr. Ankit Sharma" /></div>
       <div><label class="form-label">Designation / Role *</label><input type="text" class="form-input" id="teamDesignation" placeholder="e.g. Chief Medical Officer" /></div>
-      <div><label class="form-label">Mobile Number <span style="font-weight:400;color:#64748b;">(10 digits only)</span></label><input type="tel" class="form-input" id="teamMobile" placeholder="9876543210" maxlength="10" inputmode="numeric" pattern="\d{10}" /></div>
+      <div><label class="form-label">Section *</label><select class="form-select" id="teamSection">
+        <option value="">-- Select Section --</option>
+        <option value="founders">Meet Our Founders</option>
+        <option value="leadership">Our Leadership</option>
+        <option value="advisory">Professional Advisory Members</option>
+        <option value="board">Advisory Board</option>
+      </select></div>
       <div><label class="form-label">Email Address</label><input type="email" class="form-input" id="teamEmail" placeholder="name@example.com" /></div>
       <div><label class="form-label">Description</label><textarea class="form-textarea" id="teamDescription" placeholder="Brief bio or role description..."></textarea></div>
       <div><label class="form-label">Display Order</label><input type="number" class="form-input" id="teamOrder" placeholder="0" min="0" /></div>
@@ -1350,15 +1356,17 @@ function renderTeam() {
   const grid = document.getElementById('teamGrid');
   const empty = document.getElementById('teamEmpty');
   if (!teamMembers.length) { empty.style.display = ''; grid.style.display = 'none'; return; }
+  const sectionNames = { founders: 'Founders', leadership: 'Leadership', advisory: 'Advisory', board: 'Board' };
   grid.innerHTML = teamMembers.map(m => `
-    <div class="item-card">
+    <div class="item-card" ${m.description ? `title="${escHtml(m.description)}"` : ''} style="${m.description ? 'cursor: help;' : ''}">
       ${m.imageUrl
         ? `<img class="item-img" src="${m.imageUrl}" alt="${escHtml(m.name)}" style="object-fit:cover;border-radius:50%;width:80px;height:80px;margin:0 auto;" />`
         : `<div class="item-img-placeholder" style="height:80px;font-size:2.5rem;">👤</div>`}
       <div class="item-info">
         <div class="item-name">${escHtml(m.name)}${!m.isActive ? '<span class="item-badge-inactive">Hidden</span>' : ''}</div>
         <div class="item-year">${escHtml(m.designation)}</div>
-        ${m.description ? `<div class="item-desc">${escHtml(m.description)}</div>` : ''}
+        ${m.section ? `<span style="font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 8px;border-radius:4px;background:#e0e7ff;color:#5b21b6;display:inline-block;margin:0.25rem 0;">${sectionNames[m.section] || escHtml(m.section)}</span>` : ''}
+        ${m.description ? `<div class="item-desc" style="font-size:0.75rem;color:#9ca3af;">${escHtml(m.description.substring(0, 60))}${m.description.length > 60 ? '...' : ''}</div>` : ''}
         <div class="item-desc">Order: ${m.order}</div>
       </div>
       <div class="item-actions">
@@ -1374,7 +1382,15 @@ function openTeamModal(member = null) {
   document.getElementById('teamModalTitle').textContent = member ? 'Edit Team Member' : 'Add Team Member';
   document.getElementById('teamName').value = member ? member.name : '';
   document.getElementById('teamDesignation').value = member ? member.designation : '';
-  document.getElementById('teamMobile').value = member ? (member.mobile || '') : '';
+
+  // Set section - make sure to set it AFTER all options are available
+  const sectionSelect = document.getElementById('teamSection');
+  if (member && member.section) {
+    sectionSelect.value = member.section;
+  } else {
+    sectionSelect.value = '';
+  }
+
   document.getElementById('teamEmail').value = member ? (member.email || '') : '';
   document.getElementById('teamDescription').value = member ? (member.description || '') : '';
   document.getElementById('teamOrder').value = member ? member.order : 0;
@@ -1394,28 +1410,41 @@ async function saveTeamMember() {
   const id = document.getElementById('teamEditId').value;
   const name = document.getElementById('teamName').value.trim();
   const designation = document.getElementById('teamDesignation').value.trim();
-  const mobile = document.getElementById('teamMobile').value.trim().replace(/\D/g, '');
+  const section = document.getElementById('teamSection').value;
   const email = document.getElementById('teamEmail').value.trim();
   if (!name) { showModalAlert('teamModalAlert', 'Name is required.'); return; }
   if (!designation) { showModalAlert('teamModalAlert', 'Designation is required.'); return; }
-  if (mobile && mobile.length !== 10) { showModalAlert('teamModalAlert', 'Mobile number must be exactly 10 digits.'); return; }
+  if (!section || section === '') { showModalAlert('teamModalAlert', 'Section is required.'); return; }
   const btn = document.getElementById('saveTeamBtn');
   btn.disabled = true; btn.textContent = 'Saving...';
   const fd = new FormData();
   fd.append('name', name);
   fd.append('designation', designation);
-  fd.append('mobile', mobile);
+  fd.append('section', section);
   fd.append('email', email);
   fd.append('description', document.getElementById('teamDescription').value);
   fd.append('order', document.getElementById('teamOrder').value || 0);
   fd.append('isActive', document.getElementById('teamActive').value);
   const file = document.getElementById('teamFile').files[0];
   if (file) fd.append('image', file);
+  console.log('Saving team member:', { name, designation, section, email });
   try {
-    if (id) { await apiCall(`/team/${id}`, 'PUT', fd, true); toast('Team member updated ✅'); }
-    else { await apiCall('/team', 'POST', fd, true); toast('Team member added ✅'); }
-    closeTeamModal(); loadTeam();
-  } catch (err) { showModalAlert('teamModalAlert', err.message); }
+    if (id) {
+      console.log('Updating team member ID:', id);
+      await apiCall(`/team/${id}`, 'PUT', fd, true);
+      toast('Team member updated ✅');
+    }
+    else {
+      console.log('Creating new team member');
+      await apiCall('/team', 'POST', fd, true);
+      toast('Team member added ✅');
+    }
+    closeTeamModal();
+    loadTeam();
+  } catch (err) {
+    console.error('Save error:', err);
+    showModalAlert('teamModalAlert', err.message);
+  }
   finally { btn.disabled = false; btn.textContent = 'Save Member'; }
 }
 

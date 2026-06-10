@@ -554,7 +554,7 @@ const chatInput = document.getElementById('chatInput');
 const chatSend = document.getElementById('chatSend');
 
 // WhatsApp phone number
-const WHATSAPP_NUMBER = '917011648922';
+const WHATSAPP_NUMBER = '917303898884';
 
 // Toggle chatbox
 whatsappBtn.addEventListener('click', () => {

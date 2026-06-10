@@ -149,6 +149,19 @@
     margin-bottom: 0.5rem;
 }
 
+.leader-info .leader-desc {
+    font-size: 0.8rem;
+    color: #999;
+    margin: 0.5rem 0;
+    line-height: 1.4;
+    max-height: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
 .leader-contact {
     display: flex;
     flex-direction: column;
@@ -194,7 +207,228 @@
     letter-spacing: -0.02em;
 }
 
+/* Section subtitles */
+.section-subtitle {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 1024px) {
+    .leadership-section {
+        padding: 4rem 1.5rem;
+        border-radius: 30px;
+    }
+    .leadership-header h2 {
+        font-size: 2.5rem;
+    }
+    .leadership-header p {
+        font-size: 1rem;
+    }
+    .leadership-grid {
+        gap: 2rem;
+    }
+    .leader-card {
+        width: 240px;
+        padding: 1.25rem 1.25rem 2.5rem;
+    }
+    .leader-img-wrapper {
+        width: 180px;
+        height: 180px;
+        border-width: 4px;
+    }
+}
+
 @media (max-width: 768px) {
-    .leadership-section { padding: 3rem 1.5rem; }
-    .leadership-header h2 { font-size: 2.2rem; }
+    .leadership-section {
+        padding: 3rem 1.5rem;
+        border-radius: 20px;
+        margin-top: 3rem;
+    }
+    .leadership-header {
+        margin-bottom: 2.5rem;
+    }
+    .leadership-header h2 {
+        font-size: 2rem;
+    }
+    .leadership-header p {
+        font-size: 0.95rem;
+        max-width: 100%;
+    }
+    .leadership-grid {
+        gap: 1.5rem;
+        justify-content: space-around;
+    }
+    .leader-card {
+        width: 210px;
+        padding: 1rem 1rem 2rem;
+        border-radius: 100px;
+    }
+    .leader-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+    .leader-img-wrapper {
+        width: 160px;
+        height: 160px;
+        margin-bottom: 1rem;
+        border-width: 3px;
+    }
+    .leader-info h3 {
+        font-size: 1.05rem;
+    }
+    .leader-info .leader-role {
+        font-size: 0.85rem;
+    }
+    .leader-info .leader-desc {
+        font-size: 0.75rem;
+        max-height: 50px;
+        -webkit-line-clamp: 2;
+    }
+    .leader-contact-item {
+        font-size: 0.75rem;
+    }
+    .section-subtitle {
+        font-size: 1.2rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .leadership-section {
+        padding: 2.5rem 1rem;
+        border-radius: 15px;
+        margin-top: 2rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+    .leadership-header {
+        margin-bottom: 2rem;
+    }
+    .leadership-header h2 {
+        font-size: 1.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .leadership-header p {
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    .leadership-grid {
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
+    }
+    .leader-card {
+        width: 100%;
+        max-width: 280px;
+        padding: 1.25rem 1rem 2rem;
+        border-radius: 20px;
+    }
+    .leader-card::before {
+        display: none;
+    }
+    .leader-card:hover {
+        transform: translateY(-8px);
+    }
+    .leader-img-wrapper {
+        width: 140px;
+        height: 140px;
+        margin-bottom: 1rem;
+        border-width: 3px;
+    }
+    .leader-info h3 {
+        font-size: 1rem;
+    }
+    .leader-info .leader-role {
+        font-size: 0.82rem;
+        margin-bottom: 0.3rem;
+    }
+    .leader-info .leader-desc {
+        font-size: 0.7rem;
+        max-height: 45px;
+        -webkit-line-clamp: 2;
+        margin: 0.4rem 0;
+    }
+    .leader-contact {
+        gap: 0.35rem;
+        margin-top: 0.5rem;
+    }
+    .leader-contact-item {
+        font-size: 0.7rem;
+    }
+    .leader-initials {
+        font-size: 2rem;
+    }
+    .section-subtitle {
+        font-size: 1.05rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.65rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .leadership-section {
+        padding: 2rem 0.75rem;
+        border-radius: 12px;
+        margin-top: 1.5rem;
+    }
+    .leadership-header h2 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .leadership-header p {
+        font-size: 0.85rem;
+    }
+    .leadership-grid {
+        gap: 1rem;
+    }
+    .leader-card {
+        width: 90%;
+        max-width: 250px;
+        padding: 1rem 0.75rem 1.75rem;
+    }
+    .leader-img-wrapper {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 0.75rem;
+        border-width: 2px;
+    }
+    .leader-info h3 {
+        font-size: 0.95rem;
+        margin-bottom: 0.2rem;
+    }
+    .leader-info .leader-role {
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+    .leader-info .leader-desc {
+        font-size: 0.65rem;
+        max-height: 40px;
+        -webkit-line-clamp: 1;
+    }
+    .leader-contact {
+        gap: 0.3rem;
+        margin-top: 0.4rem;
+    }
+    .leader-contact-item {
+        font-size: 0.65rem;
+    }
+    .leader-contact-item svg {
+        width: 12px;
+        height: 12px;
+    }
+    .leader-initials {
+        font-size: 1.75rem;
+    }
+    .section-subtitle {
+        font-size: 0.95rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+    }
 }
