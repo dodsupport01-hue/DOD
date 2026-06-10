@@ -2723,15 +2723,26 @@
                 .lv-headline em { font-style: italic; font-weight: 300; color: #818cf8; }
                 .lv-sub { font-size: 1rem; color: #94a3b8; }
                 .lv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.75rem; }
-                .lv-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; overflow: hidden; transition: transform 0.25s, box-shadow 0.25s; }
-                .lv-card:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(99,102,241,0.25); }
-                .lv-video-wrap { position: relative; width: 100%; aspect-ratio: 16/9; background: #0d1117; }
+                .lv-card { background: transparent; border: none; border-radius: 18px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+                .lv-card:hover { transform: translateY(-5px); box-shadow: 0 24px 60px rgba(99,102,241,0.30); }
+                /* Full-bleed video, no border */
+                .lv-video-wrap { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 18px; overflow: hidden; cursor: pointer; }
                 .lv-video-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
-                .lv-meta { padding: 1.25rem 1.5rem 1.5rem; }
+                /* Play hint shown when idle, hidden once playing */
+                .lv-play-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.45)); transition: opacity 0.3s ease; pointer-events: none; }
+                .lv-play-hint svg { width: 64px; height: 64px; fill: rgba(255,255,255,0.92); filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); transition: transform 0.3s ease; }
+                .lv-card:hover .lv-play-hint svg { transform: scale(1.12); }
+                .lv-video-wrap.is-playing .lv-play-hint { opacity: 0; }
+                /* Fullscreen button */
+                .lv-fs-btn { position: absolute; bottom: 12px; right: 12px; width: 40px; height: 40px; border: none; border-radius: 10px; background: rgba(15,17,23,0.65); backdrop-filter: blur(6px); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transform: translateY(6px); transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s ease; z-index: 3; }
+                .lv-video-wrap:hover .lv-fs-btn { opacity: 1; transform: translateY(0); }
+                .lv-fs-btn:hover { background: rgba(99,102,241,0.85); }
+                .lv-fs-btn svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; }
+                .lv-meta { padding: 1.1rem 0.25rem 0; }
                 .lv-badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 20px; background: rgba(99,102,241,0.2); color: #818cf8; margin-bottom: 0.6rem; }
                 .lv-meta h3 { font-size: 1rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.3rem; }
                 .lv-meta p { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
-                @media (max-width: 600px) { .lv-section { padding: 4rem 1rem 5rem; } .lv-grid { grid-template-columns: 1fr; } }
+                @media (max-width: 600px) { .lv-section { padding: 4rem 1rem 5rem; } .lv-grid { grid-template-columns: 1fr; } .lv-fs-btn { opacity: 1; transform: none; } }
             </style>
             <div class="lv-inner">
                 <div class="lv-header" data-aos="fade-up">
@@ -2753,6 +2764,49 @@
             <script>
             (function(){
                 var API = (window.BACKEND_URL ? window.BACKEND_URL + '/api' : (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') ? 'http://localhost:5000/api' : 'https://api.dodsmarthealth.com/api'));
+
+                var PLAY_ICON = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(99,102,241,0.55)"/><path d="M10 8l6 4-6 4z" fill="#fff"/></svg>';
+                var FS_ICON = '<svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"/></svg>';
+
+                function enterFullscreen(el){
+                    var fn = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitEnterFullscreen || el.msRequestFullscreen;
+                    if (fn) fn.call(el);
+                }
+
+                function setupVideoCard(wrap){
+                    var video = wrap.querySelector('video');
+                    var fsBtn = wrap.querySelector('.lv-fs-btn');
+                    if (!video) return;
+
+                    // Hover -> play muted & looping. Leave -> pause and show hint again.
+                    wrap.addEventListener('mouseenter', function(){
+                        video.muted = true;
+                        var p = video.play();
+                        if (p && p.catch) p.catch(function(){});
+                        wrap.classList.add('is-playing');
+                    });
+                    wrap.addEventListener('mouseleave', function(){
+                        if (document.fullscreenElement === video) return;
+                        video.pause();
+                        wrap.classList.remove('is-playing');
+                    });
+                    // Click video (not the FS button) -> fullscreen
+                    wrap.addEventListener('click', function(e){
+                        if (fsBtn && fsBtn.contains(e.target)) return;
+                        enterFullscreen(video);
+                    });
+                    if (fsBtn) {
+                        fsBtn.addEventListener('click', function(e){
+                            e.stopPropagation();
+                            video.muted = false;   // sound on in fullscreen
+                            video.loop = true;
+                            var p = video.play();
+                            if (p && p.catch) p.catch(function(){});
+                            enterFullscreen(video);
+                        });
+                    }
+                }
+
                 fetch(API + '/local-videos')
                     .then(function(r){ return r.json(); })
                     .then(function(resp){
@@ -2763,11 +2817,13 @@
                         grid.innerHTML = resp.data.map(function(v){
                             return '<div class="lv-card">' +
                                 '<div class="lv-video-wrap">' +
-                                    '<video controls preload="none" playsinline' +
+                                    '<video loop muted playsinline preload="none"' +
                                     (v.thumbnailUrl ? ' poster="' + v.thumbnailUrl + '"' : '') +
                                     ' aria-label="' + (v.title || 'DOD Video') + '">' +
-                                        '<source src="' + v.videoUrl + '" type="video/mp4" />' +
+                                        '<source data-src="' + v.videoUrl + '" type="video/mp4" />' +
                                     '</video>' +
+                                    '<div class="lv-play-hint">' + PLAY_ICON + '</div>' +
+                                    '<button class="lv-fs-btn" title="Fullscreen" aria-label="Play fullscreen">' + FS_ICON + '</button>' +
                                 '</div>' +
                                 '<div class="lv-meta">' +
                                     (v.badge ? '<span class="lv-badge">' + v.badge + '</span>' : '') +
@@ -2776,6 +2832,30 @@
                                 '</div>' +
                             '</div>';
                         }).join('');
+
+                        // Lazy-load each video source only when it nears the viewport (fast page load, no lag).
+                        var wraps = grid.querySelectorAll('.lv-video-wrap');
+                        var io = ('IntersectionObserver' in window) ? new IntersectionObserver(function(entries, obs){
+                            entries.forEach(function(en){
+                                if (!en.isIntersecting) return;
+                                var src = en.target.querySelector('source[data-src]');
+                                if (src) {
+                                    src.src = src.getAttribute('data-src');
+                                    src.removeAttribute('data-src');
+                                    en.target.querySelector('video').load();
+                                }
+                                obs.unobserve(en.target);
+                            });
+                        }, { rootMargin: '300px' }) : null;
+
+                        wraps.forEach(function(w){
+                            setupVideoCard(w);
+                            if (io) { io.observe(w); }
+                            else {
+                                var src = w.querySelector('source[data-src]');
+                                if (src) { src.src = src.getAttribute('data-src'); src.removeAttribute('data-src'); w.querySelector('video').load(); }
+                            }
+                        });
                     })
                     .catch(function(){
                         /* silently hide section if API unreachable */
@@ -3138,7 +3218,7 @@
                     </div>
                 </div>
 
-                <div class="bp-stats" data-aos="fade-up">
+                <!-- <div class="bp-stats" data-aos="fade-up">
                     <div class="bp-stat">
                         <span class="bp-stat-num stat-number" data-target="150">0</span>
                         <span class="bp-stat-label">Healthcare Facilities</span>
@@ -3153,7 +3233,7 @@
                         <span class="bp-stat-num stat-number" data-target="25">0</span>
                         <span class="bp-stat-label">States Across India</span>
                     </div>
-                </div>
+                </div> -->
             </div>
 
             <style>
@@ -3294,7 +3374,7 @@
                 }
                 .bp-stat-num {
                     display: block;
-                    font-size: clamp(2.5rem, 5vw, 3.5rem);
+                    font-size: clamp(1rem, 3vw, 1.5rem);
                     font-weight: 800;
                     color: #0d1117;
                     line-height: 1;
@@ -3305,12 +3385,12 @@
                 }
                 .bp-stat-label {
                     display: block;
-                    font-size: 0.8rem;
+                    font-size: 0.6rem;
                     font-weight: 600;
                     letter-spacing: 0.1em;
                     text-transform: uppercase;
                     color: #9ca3af;
-                    margin-top: 0.4rem;
+                    margin-top: 0.5rem;
                 }
                 @media (max-width: 768px) {
                     .bp-logo-slot {
@@ -3467,7 +3547,7 @@
                     flex: 0 0 auto;
                     width: 320px;
                     min-height: 180px;
-                    padding: 1.5rem 1.2rem;
+                    padding: 1rem;
                     background: #fff;
                     border-radius: 20px;
                     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
@@ -3487,11 +3567,11 @@
                     display: flex;
                     align-items: center;
                     flex-direction: column;
-                    gap: 1rem;
+                    gap: 0.5rem;
                 }
                 .cert-badge {
-                    width: 90px;
-                    height: 90px;
+                    width: 120px;
+                    height: 120px;
                     flex: 0 0 auto;
                     border-radius: 50%;
                     background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
@@ -3508,8 +3588,8 @@
                     border-color: rgba(99, 102, 241, 0.4);
                 }
                 .cert-badge img {
-                    width: 65px;
-                    height: 65px;
+                    width: 92px;
+                    height: 92px;
                     object-fit: contain;
                     display: block;
                 }
@@ -3608,15 +3688,15 @@
                     .cert-slot {
                         width: 280px;
                         min-height: 170px;
-                        padding: 1.25rem 1rem;
+                        padding: 1rem;
                     }
                     .cert-badge {
-                        width: 80px;
-                        height: 80px;
+                        width: 108px;
+                        height: 108px;
                     }
                     .cert-badge img {
-                        width: 55px;
-                        height: 55px;
+                        width: 82px;
+                        height: 82px;
                     }
                     .cert-copy strong {
                         font-size: 0.92rem;
@@ -3632,19 +3712,19 @@
                     .cert-slot {
                         width: 260px;
                         min-height: 160px;
-                        padding: 1rem;
+                        padding: 0.8rem;
                         gap: 0.8rem;
                     }
                     .cert-slot-inner {
-                        gap: 0.8rem;
+                        gap: 0.4rem;
                     }
                     .cert-badge {
-                        width: 72px;
-                        height: 72px;
+                        width: 96px;
+                        height: 96px;
                     }
                     .cert-badge img {
-                        width: 48px;
-                        height: 48px;
+                        width: 72px;
+                        height: 72px;
                     }
                     .cert-seal {
                         font-size: 1.5rem;
@@ -3940,14 +4020,12 @@
                         var API = window.BACKEND_URL ? window.BACKEND_URL + '/api'
                             : (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
                                 ? 'http://localhost:5000/api' : 'https://api.dodsmarthealth.com/api');
+                        var leadershipWrap = document.querySelector('.leadership-section');
                         fetch(API + '/team')
                             .then(function(r){ return r.json(); })
                             .then(function(resp){
                                 if (!resp.success || !resp.data || !resp.data.length) {
-                                    document.getElementById('foundersSection').style.display = 'none';
-                                    document.getElementById('leadershipSubSection').style.display = 'none';
-                                    document.getElementById('advisorySection').style.display = 'none';
-                                    document.getElementById('boardSection').style.display = 'none';
+                                    if (leadershipWrap) leadershipWrap.style.display = 'none';
                                     return;
                                 }
                                 var sections = {
@@ -3960,7 +4038,13 @@
                                     if (m.section && sections.hasOwnProperty(m.section)) {
                                         sections[m.section].push(m);
                                     }
+                                    // Members without an assigned section are not shown
                                 });
+                                var totalShown = sections.founders.length + sections.leadership.length + sections.advisory.length + sections.board.length;
+                                if (totalShown === 0) {
+                                    if (leadershipWrap) leadershipWrap.style.display = 'none';
+                                    return;
+                                }
                                 function renderGrid(members, gridId){
                                     var grid = document.getElementById(gridId);
                                     if (!members || !members.length) {
@@ -3972,15 +4056,26 @@
                                         var img = m.imageUrl
                                             ? '<img src="' + m.imageUrl + '" alt="' + m.name + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" /><span class="leader-initials" style="display:none;">' + initials + '</span>'
                                             : '<span class="leader-initials">' + initials + '</span>';
-                                        var contact = '';
-                                        if (m.email) contact += '<a href="mailto:' + m.email + '" class="leader-contact-item" title="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></a>';
-                                        return '<div class="leader-card" ' + (m.description ? 'title="' + m.description + '"' : '') + '>'
-                                            + '<div class="leader-img-wrapper">' + img + '</div>'
-                                            + '<div class="leader-info">'
-                                                + '<h3 class="leader-name">' + m.name + '</h3>'
-                                                + '<p class="leader-role">' + m.designation + '</p>'
-                                                + (m.description ? '<p class="leader-desc">' + m.description + '</p>' : '')
-                                                + (contact ? '<div class="leader-contact">' + contact + '</div>' : '')
+                                        var mailIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
+                                        var email = m.email
+                                            ? '<a href="mailto:' + m.email + '" class="leader-contact-item" title="Email">' + mailIcon + '<span>' + m.email + '</span></a>'
+                                            : '';
+                                        return '<div class="leader-card">'
+                                            + '<div class="leader-card-inner">'
+                                                + '<div class="leader-card-front">'
+                                                    + '<div class="leader-img-wrapper">' + img + '</div>'
+                                                    + '<div class="leader-info">'
+                                                        + '<h3 class="leader-name">' + m.name + '</h3>'
+                                                        + '<p class="leader-role">' + m.designation + '</p>'
+                                                    + '</div>'
+                                                + '</div>'
+                                                + '<div class="leader-card-back">'
+                                                    + '<div class="leader-back-content">'
+                                                        + '<h3 class="leader-name">' + m.name + '</h3>'
+                                                        + (m.description ? '<p class="leader-desc-full">' + m.description + '</p>' : '')
+                                                        + (email ? '<div class="leader-contact">' + email + '</div>' : '')
+                                                    + '</div>'
+                                                + '</div>'
                                             + '</div>'
                                         + '</div>';
                                     }).join('');

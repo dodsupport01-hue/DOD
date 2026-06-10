@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(cd \"d:\\\\websitem\\\\DOD\"; $content = [System.IO.File]::ReadAllText\\('index.html', [System.Text.Encoding]::UTF8\\); $idx = $content.IndexOf\\('YOUTUBE VIDEOS'\\); $content.Substring\\($idx - 10, 80\\) | Format-List)"
+      "PowerShell(cd \"d:\\\\websitem\\\\DOD\"; $content = [System.IO.File]::ReadAllText\\('index.html', [System.Text.Encoding]::UTF8\\); $idx = $content.IndexOf\\('YOUTUBE VIDEOS'\\); $content.Substring\\($idx - 10, 80\\) | Format-List)",
+      "Bash(git commit -m '@ *)",
+      "Bash(git commit --amend -m 'fix: persist team member section field in backend *)",
+      "Bash(git push *)",
+      "Bash(curl -s \"https://api.dodsmarthealth.com/api/team\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); m=d['data'][0]; print\\('KEYS:', list\\(m.keys\\(\\)\\)\\); print\\('HAS section:', 'section' in m\\); print\\('HAS mobile:', 'mobile' in m\\)\")",
+      "Bash(git fetch *)",
+      "Bash(git config *)",
+      "Bash(gh auth *)",
+      "PowerShell(cmdkey /delete:LegacyGeneric:target=git:https://github.com)"
     ]
   }
 }

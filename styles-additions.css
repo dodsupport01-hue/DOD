@@ -47,11 +47,47 @@
 
 /* ===== Futuristic Leadership Section ===== */
 .leadership-section {
-    background: #1e1e1e; /* Dark futuristic background */
-    border-radius: 40px;
-    padding: 5rem 2rem;
+    /* Break out of the .aj-inner (max-width:960px) container to full viewport width */
+    position: relative;
+    left: 50%;
+    right: 50%;
+    width: 100vw;
+    margin-left: -50vw;
+    margin-right: -50vw;
     margin-top: 4rem;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+    padding: 5rem clamp(1.5rem, 6vw, 6rem);
+    box-sizing: border-box;
+    border-radius: 0;
+    box-shadow: none;
+    background-color: #1a1a1a; /* Dark futuristic base */
+    /* Subtle tiled grid pattern, faintly visible */
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        radial-gradient(circle at 20% 15%, rgba(99, 102, 241, 0.10), transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(14, 165, 233, 0.10), transparent 45%);
+    background-size:
+        48px 48px,
+        48px 48px,
+        100% 100%,
+        100% 100%;
+    background-position: center;
+    overflow: hidden;
+}
+
+/* Soft vignette so tiles fade at the edges for a subtle UI feel */
+.leadership-section::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
+    z-index: 0;
+}
+
+.leadership-section > * {
+    position: relative;
+    z-index: 1;
 }
 
 .leadership-header {
@@ -82,47 +118,67 @@
     flex-wrap: wrap;
 }
 
+/* ===== Flip Card ===== */
 .leader-card {
-    background: #2a2a2a;
-    border-radius: 120px;
-    padding: 1.5rem 1.5rem 3rem 1.5rem;
     width: 250px;
+    height: 360px;
+    perspective: 1400px;
+    background: transparent;
+}
+
+.leader-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transform-style: preserve-3d;
+}
+
+.leader-card:hover .leader-card-inner {
+    transform: rotateY(180deg);
+}
+
+.leader-card-front,
+.leader-card-back {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
-    border: 1px solid rgba(255,255,255,0.05);
-    position: relative;
     overflow: hidden;
 }
 
-.leader-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 50%;
-    background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
-    z-index: 0;
+.leader-card-front {
+    background: linear-gradient(180deg, #313131 0%, #242424 100%);
+    padding: 2rem 1.5rem;
+    justify-content: flex-start;
 }
 
-.leader-card:hover {
-    transform: translateY(-15px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-    border-color: rgba(255,255,255,0.15);
+.leader-card-back {
+    background: linear-gradient(155deg, #2d2b4a 0%, #1e1e1e 70%);
+    transform: rotateY(180deg);
+    justify-content: center;
+    padding: 1.75rem 1.5rem;
 }
 
 .leader-img-wrapper {
-    width: 200px;
-    height: 200px;
+    width: 160px;
+    height: 160px;
     border-radius: 50%;
     overflow: hidden;
-    margin-bottom: 1.5rem;
-    border: 5px solid #2a2a2a;
+    margin-bottom: 1.25rem;
+    border: 4px solid rgba(255, 255, 255, 0.12);
     background: #fff;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
 }
 
 .leader-img-wrapper img {
@@ -131,12 +187,8 @@
     object-fit: cover;
 }
 
-.leader-info {
-    position: relative;
-    z-index: 1;
-}
-
-.leader-info h3 {
+.leader-info h3,
+.leader-back-content h3 {
     font-size: 1.2rem;
     font-weight: 600;
     color: #fff;
@@ -146,27 +198,41 @@
 .leader-info .leader-role {
     font-size: 0.9rem;
     color: #bbb;
-    margin-bottom: 0.5rem;
 }
 
-.leader-info .leader-desc {
-    font-size: 0.8rem;
-    color: #999;
-    margin: 0.5rem 0;
-    line-height: 1.4;
-    max-height: 60px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
+.leader-back-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.leader-desc-full {
+    font-size: 0.78rem;
+    color: #d0d0d8;
+    line-height: 1.55;
+    max-height: 180px;
+    overflow-y: auto;
+    white-space: pre-line;
+    text-align: left;
+    padding: 0 0.25rem;
+}
+
+.leader-desc-full::-webkit-scrollbar {
+    width: 4px;
+}
+.leader-desc-full::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
 }
 
 .leader-contact {
     display: flex;
     flex-direction: column;
     gap: 0.45rem;
-    margin-top: 0.75rem;
+    margin-top: 0.25rem;
+    width: 100%;
 }
 
 .leader-contact-item {
@@ -174,8 +240,8 @@
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    font-size: 0.82rem;
-    color: #aaa;
+    font-size: 0.78rem;
+    color: #c7c7d1;
     text-decoration: none;
     transition: color 0.2s;
     word-break: break-all;
@@ -186,10 +252,10 @@
 }
 
 .leader-contact-item svg {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
     flex-shrink: 0;
-    stroke: #6366f1;
+    stroke: #818cf8;
 }
 
 /* Initials fallback when no photo */
@@ -223,7 +289,6 @@
 @media (max-width: 1024px) {
     .leadership-section {
         padding: 4rem 1.5rem;
-        border-radius: 30px;
     }
     .leadership-header h2 {
         font-size: 2.5rem;
@@ -236,19 +301,17 @@
     }
     .leader-card {
         width: 240px;
-        padding: 1.25rem 1.25rem 2.5rem;
+        height: 350px;
     }
     .leader-img-wrapper {
-        width: 180px;
-        height: 180px;
-        border-width: 4px;
+        width: 150px;
+        height: 150px;
     }
 }
 
 @media (max-width: 768px) {
     .leadership-section {
         padding: 3rem 1.5rem;
-        border-radius: 20px;
         margin-top: 3rem;
     }
     .leadership-header {
@@ -266,33 +329,23 @@
         justify-content: space-around;
     }
     .leader-card {
-        width: 210px;
-        padding: 1rem 1rem 2rem;
-        border-radius: 100px;
-    }
-    .leader-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.35);
+        width: 220px;
+        height: 340px;
     }
     .leader-img-wrapper {
-        width: 160px;
-        height: 160px;
+        width: 140px;
+        height: 140px;
         margin-bottom: 1rem;
-        border-width: 3px;
     }
-    .leader-info h3 {
+    .leader-info h3,
+    .leader-back-content h3 {
         font-size: 1.05rem;
     }
     .leader-info .leader-role {
         font-size: 0.85rem;
     }
-    .leader-info .leader-desc {
-        font-size: 0.75rem;
-        max-height: 50px;
-        -webkit-line-clamp: 2;
-    }
     .leader-contact-item {
-        font-size: 0.75rem;
+        font-size: 0.74rem;
     }
     .section-subtitle {
         font-size: 1.2rem;
@@ -304,9 +357,7 @@
 @media (max-width: 600px) {
     .leadership-section {
         padding: 2.5rem 1rem;
-        border-radius: 15px;
         margin-top: 2rem;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     }
     .leadership-header {
         margin-bottom: 2rem;
@@ -327,40 +378,26 @@
     .leader-card {
         width: 100%;
         max-width: 280px;
-        padding: 1.25rem 1rem 2rem;
-        border-radius: 20px;
-    }
-    .leader-card::before {
-        display: none;
-    }
-    .leader-card:hover {
-        transform: translateY(-8px);
+        height: 360px;
     }
     .leader-img-wrapper {
-        width: 140px;
-        height: 140px;
+        width: 150px;
+        height: 150px;
         margin-bottom: 1rem;
-        border-width: 3px;
     }
-    .leader-info h3 {
-        font-size: 1rem;
+    .leader-info h3,
+    .leader-back-content h3 {
+        font-size: 1.05rem;
     }
     .leader-info .leader-role {
         font-size: 0.82rem;
-        margin-bottom: 0.3rem;
-    }
-    .leader-info .leader-desc {
-        font-size: 0.7rem;
-        max-height: 45px;
-        -webkit-line-clamp: 2;
-        margin: 0.4rem 0;
     }
     .leader-contact {
         gap: 0.35rem;
         margin-top: 0.5rem;
     }
     .leader-contact-item {
-        font-size: 0.7rem;
+        font-size: 0.72rem;
     }
     .leader-initials {
         font-size: 2rem;
@@ -375,7 +412,6 @@
 @media (max-width: 480px) {
     .leadership-section {
         padding: 2rem 0.75rem;
-        border-radius: 12px;
         margin-top: 1.5rem;
     }
     .leadership-header h2 {
@@ -391,37 +427,30 @@
     .leader-card {
         width: 90%;
         max-width: 250px;
-        padding: 1rem 0.75rem 1.75rem;
+        height: 350px;
     }
     .leader-img-wrapper {
-        width: 120px;
-        height: 120px;
+        width: 140px;
+        height: 140px;
         margin-bottom: 0.75rem;
-        border-width: 2px;
     }
-    .leader-info h3 {
-        font-size: 0.95rem;
-        margin-bottom: 0.2rem;
+    .leader-info h3,
+    .leader-back-content h3 {
+        font-size: 0.98rem;
     }
     .leader-info .leader-role {
         font-size: 0.8rem;
-        margin-bottom: 0.25rem;
-    }
-    .leader-info .leader-desc {
-        font-size: 0.65rem;
-        max-height: 40px;
-        -webkit-line-clamp: 1;
     }
     .leader-contact {
         gap: 0.3rem;
         margin-top: 0.4rem;
     }
     .leader-contact-item {
-        font-size: 0.65rem;
+        font-size: 0.66rem;
     }
     .leader-contact-item svg {
-        width: 12px;
-        height: 12px;
+        width: 13px;
+        height: 13px;
     }
     .leader-initials {
         font-size: 1.75rem;
