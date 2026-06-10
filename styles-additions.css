@@ -166,7 +166,7 @@
     background: linear-gradient(155deg, #2d2b4a 0%, #1e1e1e 70%);
     transform: rotateY(180deg);
     justify-content: center;
-    padding: 1.75rem 1.5rem;
+    padding: 0.8rem;
 }
 
 .leader-img-wrapper {
@@ -198,6 +198,19 @@
 .leader-info .leader-role {
     font-size: 0.9rem;
     color: #bbb;
+}
+
+/* Email shown on the front of the card */
+.leader-card-front .leader-img-wrapper {
+    width: 140px;
+    height: 140px;
+    margin-bottom: 1rem;
+}
+.leader-contact-front {
+    margin-top: 0.6rem;
+}
+.leader-contact-front .leader-contact-item {
+    font-size: 0.74rem;
 }
 
 .leader-back-content {
