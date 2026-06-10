@@ -28,17 +28,19 @@ router.get('/all', protect, async (req, res) => {
 // POST /api/team  (ADMIN)
 router.post('/', protect, uploadTeam.single('image'), async (req, res) => {
   try {
-    const { name, designation, mobile, email, description, order, isActive } = req.body;
+    const { name, designation, section, email, description, order, isActive } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
     if (!designation) return res.status(400).json({ success: false, message: 'Designation is required' });
-    if (mobile && !/^\d{10}$/.test(mobile.replace(/\s/g, ''))) {
-      return res.status(400).json({ success: false, message: 'Mobile must be exactly 10 digits' });
+    if (!section) return res.status(400).json({ success: false, message: 'Section is required' });
+    const validSections = ['founders', 'leadership', 'advisory', 'board'];
+    if (!validSections.includes(section)) {
+      return res.status(400).json({ success: false, message: 'Invalid section value' });
     }
 
     const member = await TeamMember.create({
       name,
       designation,
-      mobile: mobile || '',
+      section,
       email: email || '',
       description: description || '',
       imageUrl: req.file ? req.file.path : '',
@@ -58,13 +60,16 @@ router.put('/:id', protect, uploadTeam.single('image'), async (req, res) => {
     const member = await TeamMember.findById(req.params.id);
     if (!member) return res.status(404).json({ success: false, message: 'Team member not found' });
 
-    const { name, designation, mobile, email, description, order, isActive } = req.body;
-    if (mobile !== undefined && mobile !== '' && !/^\d{10}$/.test(mobile.replace(/\s/g, ''))) {
-      return res.status(400).json({ success: false, message: 'Mobile must be exactly 10 digits' });
+    const { name, designation, section, email, description, order, isActive } = req.body;
+    if (section !== undefined && section !== '') {
+      const validSections = ['founders', 'leadership', 'advisory', 'board'];
+      if (!validSections.includes(section)) {
+        return res.status(400).json({ success: false, message: 'Invalid section value' });
+      }
     }
     if (name) member.name = name;
     if (designation) member.designation = designation;
-    if (mobile !== undefined) member.mobile = mobile;
+    if (section !== undefined) member.section = section;
     if (email !== undefined) member.email = email;
     if (description !== undefined) member.description = description;
     if (order !== undefined) member.order = parseInt(order);
