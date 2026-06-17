@@ -1579,10 +1579,6 @@ function renderMessages() {
       <div style="margin:.6rem 0;font-size:.78rem;"><span style="background:rgba(99,102,241,0.15);color:#a5b4fc;padding:2px 8px;border-radius:6px;">Interest: ${escHtml(interest)}</span></div>
       <div style="white-space:pre-wrap;line-height:1.6;font-size:.9rem;color:var(--text);background:rgba(0,0,0,0.15);padding:.75rem;border-radius:8px;">${escHtml(m.message)}</div>
       <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap;">
-        <button class="btn btn-outline" style="padding:.35rem .75rem;font-size:.78rem;" onclick="toggleMessageRead('${m._id}', ${!m.isRead})">
-          ${m.isRead ? '↩ Mark as Unread' : '✓ Mark as Read'}
-        </button>
-        <a class="btn btn-secondary" style="padding:.35rem .75rem;font-size:.78rem;" href="mailto:${escHtml(m.email)}?subject=Re:%20Your%20enquiry%20to%20DOD%20Smart%20Health">Reply</a>
         <button class="btn btn-danger" style="padding:.35rem .75rem;font-size:.78rem;" onclick="deleteMessage('${m._id}', '${escHtml(m.name).replace(/'/g, "\\'")}')">🗑 Delete</button>
       </div>
     </div>`;
