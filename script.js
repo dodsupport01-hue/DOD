@@ -144,18 +144,69 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 // ===== Form Submission Handler =====
 const contactForm = document.querySelector('.contact-form');
 
-contactForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    // Get form data
-    const formData = new FormData(contactForm);
-    
-    // Show success message (in a real application, you would send this to a server)
-    showNotification('Thank you! Your message has been sent successfully.', 'success');
-    
-    // Reset form
-    contactForm.reset();
-});
+// API base — mirrors the convention used elsewhere on the site
+const CONTACT_API_BASE = (typeof window.BACKEND_URL === 'string' && window.BACKEND_URL)
+    ? window.BACKEND_URL + '/api'
+    : (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://api.dodsmarthealth.com/api');
+
+if (contactForm) {
+    contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = contactForm.querySelector('.btn-submit');
+        const btnLabel = submitBtn ? submitBtn.querySelector('span') : null;
+        const originalLabel = btnLabel ? btnLabel.textContent : '';
+
+        // Collect form data
+        const fd = new FormData(contactForm);
+        const payload = {
+            name: (fd.get('name') || '').toString().trim(),
+            email: (fd.get('email') || '').toString().trim(),
+            phone: (fd.get('phone') || '').toString().trim(),
+            company: (fd.get('company') || '').toString().trim(),
+            interest: (fd.get('interest') || '').toString().trim(),
+            message: (fd.get('message') || '').toString().trim(),
+        };
+
+        if (!payload.name || !payload.email || !payload.message) {
+            showNotification('Please fill in your name, email and message.', 'error');
+            return;
+        }
+
+        // Lock the button while sending
+        if (submitBtn) submitBtn.disabled = true;
+        if (btnLabel) btnLabel.textContent = 'Sending...';
+
+        try {
+            const res = await fetch(`${CONTACT_API_BASE}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Something went wrong. Please try again.');
+            }
+
+            showNotification(
+                data.message || 'Your request is submitted. Our team will contact you soon.',
+                'success'
+            );
+            contactForm.reset();
+        } catch (err) {
+            showNotification(
+                err.message || 'Could not send your message. Please try again later.',
+                'error'
+            );
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+            if (btnLabel) btnLabel.textContent = originalLabel || 'Send Message';
+        }
+    });
+}
 
 // Notification function
 const showNotification = (message, type = 'success') => {

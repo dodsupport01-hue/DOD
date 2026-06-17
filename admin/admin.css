@@ -130,6 +130,12 @@ body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--t
 .nav-item:hover { background: var(--bg-hover); color: var(--text); }
 .nav-item.active { background: rgba(14,165,233,0.1); border-left-color: var(--primary); color: var(--primary); }
 .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; background: #6366f1; color: #fff;
+  font-size: 0.7rem; font-weight: 600; line-height: 1;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 99px; display: inline-flex; align-items: center; justify-content: center;
+}
 
 .sidebar-footer {
   padding: 1rem 1.25rem; border-top: 1px solid var(--border);

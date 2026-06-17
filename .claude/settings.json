@@ -10,7 +10,8 @@
       "Bash(git fetch *)",
       "Bash(git config *)",
       "Bash(gh auth *)",
-      "PowerShell(cmdkey /delete:LegacyGeneric:target=git:https://github.com)"
+      "PowerShell(cmdkey /delete:LegacyGeneric:target=git:https://github.com)",
+      "Bash(node --check server.js)"
     ]
   }
 }

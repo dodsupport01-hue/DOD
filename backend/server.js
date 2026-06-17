@@ -12,6 +12,7 @@ const videosRoutes = require('./routes/videos');
 const mediaRoutes = require('./routes/media');
 const teamRoutes = require('./routes/team');
 const localVideosRoutes = require('./routes/localVideos');
+const messagesRoutes = require('./routes/messages');
 const { seedAdmin } = require('./utils/seed');
 
 const app = express();
@@ -59,6 +60,7 @@ app.use('/api/videos', videosRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/local-videos', localVideosRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // ─── 404 ────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

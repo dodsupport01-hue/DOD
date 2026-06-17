@@ -64,6 +64,13 @@
         Team
       </a>
 
+      <div class="nav-section-label">Inbox</div>
+      <a class="nav-item" data-page="messages" onclick="showPage('messages')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Messages
+        <span class="nav-badge" id="msgNavBadge" style="display:none;">0</span>
+      </a>
+
       <div class="nav-section-label">Account</div>
       <a class="nav-item" data-page="settings" onclick="showPage('settings')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -129,6 +136,10 @@
           <div class="stat-card">
             <div class="stat-icon blue">👥</div>
             <div><div class="stat-value" id="statTeam">-</div><div class="stat-label">Team Members</div></div>
+          </div>
+          <div class="stat-card" style="cursor:pointer;" onclick="showPage('messages')">
+            <div class="stat-icon purple">✉️</div>
+            <div><div class="stat-value" id="statMessages">-</div><div class="stat-label">Messages <span id="statMessagesUnread" style="color:#f87171;"></span></div></div>
           </div>
           <div class="stat-card">
             <div class="stat-icon green">✅</div>
@@ -321,6 +332,30 @@
             <div id="teamEmpty" class="empty-state" style="display:none;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
               <p>No team members yet. Click "Add Member" to get started.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MESSAGES ── -->
+      <div id="page-messages" style="display:none;">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>✉️ Contact Messages</h2>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <span id="messagesSummary" style="font-size:0.8rem;color:var(--text-muted);"></span>
+              <button class="btn btn-outline" onclick="loadMessages()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="messagesLoading" class="loading"><div class="spinner"></div>Loading messages...</div>
+            <div id="messagesList" style="display:none;"></div>
+            <div id="messagesEmpty" class="empty-state" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <p>No messages yet. Submissions from the website "Send Us a Message" form will appear here.</p>
             </div>
           </div>
         </div>
@@ -693,6 +728,7 @@ const pages = {
   localVideos: 'Local Videos',
   media: 'Media / News',
   team: 'Team Members',
+  messages: 'Contact Messages',
   settings: 'Settings',
 };
 const subtitles = {
@@ -704,6 +740,7 @@ const subtitles = {
   localVideos: 'Upload and manage local MP4 videos shown in the DOD Kiosk Showcase section.',
   media: 'Manage press and media coverage articles.',
   team: 'Manage the team members shown on the website.',
+  messages: 'Enquiries submitted through the website "Send Us a Message" form.',
   settings: 'Manage your admin account settings.',
 };
 
@@ -724,6 +761,7 @@ function showPage(name) {
   if (name === 'localVideos') loadLocalVideos();
   if (name === 'media') loadMedia();
   if (name === 'team') loadTeam();
+  if (name === 'messages') loadMessages();
 }
 
 function logout() {
@@ -1454,6 +1492,127 @@ async function deleteTeamMember(id, name) {
   catch (err) { toast('Delete failed: ' + err.message, 'error'); }
 }
 
+// ─── MESSAGES ────────────────────────────────────────────────────────────────
+let messagesCache = [];
+
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function fmtDate(d) {
+  try {
+    return new Date(d).toLocaleString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+  } catch (_) { return d; }
+}
+
+function updateMsgBadge(unread) {
+  const badge = document.getElementById('msgNavBadge');
+  if (!badge) return;
+  if (unread > 0) { badge.textContent = unread; badge.style.display = ''; }
+  else { badge.style.display = 'none'; }
+}
+
+async function loadMessages() {
+  const loading = document.getElementById('messagesLoading');
+  const list = document.getElementById('messagesList');
+  const empty = document.getElementById('messagesEmpty');
+  loading.style.display = ''; list.style.display = 'none'; empty.style.display = 'none';
+
+  try {
+    const res = await apiCall('/messages');
+    messagesCache = res.data || [];
+    const unread = res.unread || messagesCache.filter(m => !m.isRead).length;
+
+    document.getElementById('messagesSummary').textContent =
+      `${messagesCache.length} total · ${unread} unread`;
+    updateMsgBadge(unread);
+    const statM = document.getElementById('statMessages');
+    if (statM) statM.textContent = messagesCache.length;
+    const statU = document.getElementById('statMessagesUnread');
+    if (statU) statU.textContent = unread ? `(${unread} new)` : '';
+
+    loading.style.display = 'none';
+    if (!messagesCache.length) { empty.style.display = ''; return; }
+    renderMessages();
+    list.style.display = '';
+  } catch (err) {
+    loading.style.display = 'none';
+    empty.style.display = '';
+    empty.querySelector('p').textContent = 'Could not load messages: ' + err.message;
+  }
+}
+
+const INTEREST_LABELS = {
+  'kiosk-purchase': 'DOD Health Kiosk Purchase',
+  'vital-signs': 'Vital Signs Monitoring',
+  'prescription': 'Prescription Services',
+  'records': 'Medical Records Access',
+  'payment': 'Payment Processing',
+  'telemedicine': 'Telemedicine Support',
+};
+
+function renderMessages() {
+  const list = document.getElementById('messagesList');
+  list.innerHTML = messagesCache.map(m => {
+    const interest = INTEREST_LABELS[m.interest] || m.interest || '—';
+    const unreadBar = m.isRead ? '' : 'border-left:3px solid #6366f1;';
+    return `
+    <div class="msg-card" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);${unreadBar}border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.85rem;">
+      <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start;">
+        <div style="min-width:0;">
+          <div style="font-weight:600;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+            ${m.isRead ? '' : '<span style="background:#6366f1;color:#fff;font-size:.65rem;padding:2px 7px;border-radius:99px;">NEW</span>'}
+            <span>${escHtml(m.name)}</span>
+          </div>
+          <div style="font-size:.8rem;color:var(--text-muted);margin-top:.25rem;display:flex;gap:1rem;flex-wrap:wrap;">
+            <a href="mailto:${escHtml(m.email)}" style="color:#818cf8;text-decoration:none;">✉ ${escHtml(m.email)}</a>
+            ${m.phone ? `<a href="tel:${escHtml(m.phone)}" style="color:#818cf8;text-decoration:none;">☎ ${escHtml(m.phone)}</a>` : ''}
+            ${m.company ? `<span>🏢 ${escHtml(m.company)}</span>` : ''}
+          </div>
+        </div>
+        <div style="font-size:.72rem;color:var(--text-muted);white-space:nowrap;">${fmtDate(m.createdAt)}</div>
+      </div>
+      <div style="margin:.6rem 0;font-size:.78rem;"><span style="background:rgba(99,102,241,0.15);color:#a5b4fc;padding:2px 8px;border-radius:6px;">Interest: ${escHtml(interest)}</span></div>
+      <div style="white-space:pre-wrap;line-height:1.6;font-size:.9rem;color:var(--text);background:rgba(0,0,0,0.15);padding:.75rem;border-radius:8px;">${escHtml(m.message)}</div>
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap;">
+        <button class="btn btn-outline" style="padding:.35rem .75rem;font-size:.78rem;" onclick="toggleMessageRead('${m._id}', ${!m.isRead})">
+          ${m.isRead ? '↩ Mark as Unread' : '✓ Mark as Read'}
+        </button>
+        <a class="btn btn-secondary" style="padding:.35rem .75rem;font-size:.78rem;" href="mailto:${escHtml(m.email)}?subject=Re:%20Your%20enquiry%20to%20DOD%20Smart%20Health">Reply</a>
+        <button class="btn btn-danger" style="padding:.35rem .75rem;font-size:.78rem;" onclick="deleteMessage('${m._id}', '${escHtml(m.name).replace(/'/g, "\\'")}')">🗑 Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleMessageRead(id, isRead) {
+  try {
+    await apiCall(`/messages/${id}/read`, 'PATCH', { isRead });
+    const m = messagesCache.find(x => x._id === id);
+    if (m) m.isRead = isRead;
+    const unread = messagesCache.filter(x => !x.isRead).length;
+    document.getElementById('messagesSummary').textContent =
+      `${messagesCache.length} total · ${unread} unread`;
+    updateMsgBadge(unread);
+    const statU = document.getElementById('statMessagesUnread');
+    if (statU) statU.textContent = unread ? `(${unread} new)` : '';
+    renderMessages();
+  } catch (err) { toast('Update failed: ' + err.message, 'error'); }
+}
+
+async function deleteMessage(id, name) {
+  if (!confirm(`Delete message from "${name}"? This cannot be undone.`)) return;
+  try {
+    await apiCall(`/messages/${id}`, 'DELETE');
+    toast('Message deleted.', 'info');
+    loadMessages();
+  } catch (err) { toast('Delete failed: ' + err.message, 'error'); }
+}
+
 // ─── DASHBOARD STATS ─────────────────────────────────────────────────────────
 async function loadDashboardStats() {
   try {
@@ -1471,6 +1630,16 @@ async function loadDashboardStats() {
     if (v.status === 'fulfilled') document.getElementById('statVideos').textContent = (v.value.data || []).length;
     if (m.status === 'fulfilled') document.getElementById('statMedia').textContent = (m.value.data || []).length;
     if (t.status === 'fulfilled') document.getElementById('statTeam').textContent = (t.value.data || []).length;
+  } catch (_) {}
+
+  // Messages stat (admin-only endpoint → use authenticated apiCall)
+  try {
+    const res = await apiCall('/messages');
+    const total = res.count || (res.data || []).length;
+    const unread = res.unread || 0;
+    document.getElementById('statMessages').textContent = total;
+    document.getElementById('statMessagesUnread').textContent = unread ? `(${unread} new)` : '';
+    updateMsgBadge(unread);
   } catch (_) {}
 }
 
