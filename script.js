@@ -191,9 +191,8 @@ if (contactForm) {
                 throw new Error(data.message || 'Something went wrong. Please try again.');
             }
 
-            showNotification(
-                data.message || 'Your request is submitted. Our team will contact you soon.',
-                'success'
+            showSuccessPopup(
+                data.message || 'Your request is submitted. Our team will contact you soon.'
             );
             contactForm.reset();
         } catch (err) {
@@ -207,6 +206,77 @@ if (contactForm) {
         }
     });
 }
+
+// Centered "Thank You" success popup (modal)
+const showSuccessPopup = (message) => {
+    // Remove any existing popup first
+    const existing = document.getElementById('successPopupOverlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'successPopupOverlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.style.cssText = `
+        position: fixed; inset: 0; z-index: 99999;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px);
+        padding: 1.5rem; animation: spFade 0.25s ease;
+    `;
+
+    overlay.innerHTML = `
+        <div style="
+            background: #ffffff; max-width: 420px; width: 100%;
+            border-radius: 1.25rem; padding: 2.5rem 2rem 2rem;
+            text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
+            animation: spPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        ">
+            <button aria-label="Close" onclick="document.getElementById('successPopupOverlay').remove()" style="
+                position:absolute; top:1rem; right:1rem; border:none; background:transparent;
+                font-size:1.5rem; line-height:1; color:#94a3b8; cursor:pointer;
+            ">&times;</button>
+            <div style="
+                width: 76px; height: 76px; margin: 0 auto 1.25rem;
+                border-radius: 50%; background: #10b981;
+                display: flex; align-items: center; justify-content: center;
+            ">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"
+                     stroke-linecap="round" stroke-linejoin="round" style="width:38px;height:38px;">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h3 style="margin:0 0 0.5rem; font-size:1.6rem; color:#0f172a; font-weight:700;">Thank You!</h3>
+            <p style="margin:0 0 1.5rem; color:#475569; font-size:1rem; line-height:1.6;">${message}</p>
+            <button onclick="document.getElementById('successPopupOverlay').remove()" style="
+                background:#10b981; color:#fff; border:none; cursor:pointer;
+                padding:0.75rem 2rem; border-radius:0.75rem; font-size:0.95rem; font-weight:600;
+            ">Done</button>
+        </div>
+    `;
+
+    // Inject keyframes once
+    if (!document.getElementById('successPopupStyles')) {
+        const style = document.createElement('style');
+        style.id = 'successPopupStyles';
+        style.textContent = `
+            @keyframes spFade { from { opacity:0 } to { opacity:1 } }
+            @keyframes spPop { from { opacity:0; transform: translateY(20px) scale(0.92) } to { opacity:1; transform: translateY(0) scale(1) } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Close on overlay click (outside the card)
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+    // Close on Escape
+    document.addEventListener('keydown', function onEsc(e) {
+        if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); }
+    });
+
+    document.body.appendChild(overlay);
+};
 
 // Notification function
 const showNotification = (message, type = 'success') => {
