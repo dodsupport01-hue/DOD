@@ -1,0 +1,6 @@
+backend
+backend/node_modules
+render.yaml
+netlify.toml
+.htaccess
+README.md

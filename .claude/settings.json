@@ -11,7 +11,14 @@
       "Bash(git config *)",
       "Bash(gh auth *)",
       "PowerShell(cmdkey /delete:LegacyGeneric:target=git:https://github.com)",
-      "Bash(node --check server.js)"
+      "Bash(node --check server.js)",
+      "Bash(vercel --version)",
+      "Bash(vercel whoami *)",
+      "Bash(nslookup api.dodsmarthealth.com)",
+      "Bash(nslookup dodsmarthealth.com)",
+      "Bash(nslookup www.dodsmarthealth.com)",
+      "Bash(curl -s -m 30 -o - -w \"\\\\nHTTP Status: %{http_code}\\\\n\" https://api.dodsmarthealth.com/api/health)",
+      "Bash(nslookup dodsmarthealth.com 8.8.8.8)"
     ]
   }
 }
