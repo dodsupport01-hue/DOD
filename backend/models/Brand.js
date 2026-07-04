@@ -11,7 +11,10 @@ const brandSchema = new mongoose.Schema({
     required: [true, 'Brand logo URL is required'],
   },
   cloudinaryPublicId: {
-    type: String, // Used to delete old image from Cloudinary when replaced
+    type: String, // legacy — kept during ImageKit migration
+  },
+  imagekitFileId: {
+    type: String, // ImageKit fileId, used to delete image when replaced
   },
   altText: {
     type: String,

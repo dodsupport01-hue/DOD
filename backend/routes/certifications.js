@@ -1,7 +1,7 @@
 const express = require('express');
 const Certification = require('../models/Certification');
 const { protect } = require('../middleware/auth');
-const { uploadCert, deleteFromCloudinary } = require('../config/cloudinary');
+const { uploadCert, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
 
 const router = express.Router();
 
@@ -43,8 +43,9 @@ router.post('/', protect, uploadCert.single('logo'), async (req, res) => {
     };
 
     if (req.file) {
-      certData.logoUrl = req.file.path;
-      certData.cloudinaryPublicId = req.file.filename;
+      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/certifications');
+      certData.logoUrl = url;
+      certData.imagekitFileId = fileId;
     }
 
     const cert = await Certification.create(certData);
@@ -70,9 +71,10 @@ router.put('/:id', protect, uploadCert.single('logo'), async (req, res) => {
     if (isActive !== undefined) cert.isActive = isActive === 'true' || isActive === true;
 
     if (req.file) {
-      await deleteFromCloudinary(cert.cloudinaryPublicId);
-      cert.logoUrl = req.file.path;
-      cert.cloudinaryPublicId = req.file.filename;
+      await deleteFromImageKit(cert.imagekitFileId);
+      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/certifications');
+      cert.logoUrl = url;
+      cert.imagekitFileId = fileId;
     }
 
     await cert.save();
@@ -88,7 +90,7 @@ router.delete('/:id', protect, async (req, res) => {
     const cert = await Certification.findById(req.params.id);
     if (!cert) return res.status(404).json({ success: false, message: 'Certification not found' });
 
-    await deleteFromCloudinary(cert.cloudinaryPublicId);
+    await deleteFromImageKit(cert.imagekitFileId);
     await cert.deleteOne();
 
     res.json({ success: true, message: 'Certification deleted successfully' });

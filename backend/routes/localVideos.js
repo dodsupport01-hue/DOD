@@ -1,7 +1,7 @@
 const express = require('express');
 const LocalVideo = require('../models/LocalVideo');
 const { protect } = require('../middleware/auth');
-const { uploadVideo, deleteFromCloudinary } = require('../config/cloudinary');
+const { uploadVideo, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
 
 const router = express.Router();
 
@@ -25,7 +25,7 @@ router.get('/all', protect, async (req, res) => {
   }
 });
 
-// POST /api/local-videos  (ADMIN) — uploads video file to Cloudinary
+// POST /api/local-videos  (ADMIN) — uploads video file to ImageKit
 router.post('/', protect, uploadVideo.single('video'), async (req, res) => {
   try {
     if (!req.file) {
@@ -34,12 +34,14 @@ router.post('/', protect, uploadVideo.single('video'), async (req, res) => {
     const { title, description, badge, order } = req.body;
     if (!title) return res.status(400).json({ success: false, message: 'Title is required' });
 
+    const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/local-videos');
+
     const video = await LocalVideo.create({
       title,
       description: description || '',
       badge: badge || '',
-      videoUrl: req.file.path,
-      cloudinaryPublicId: req.file.filename,
+      videoUrl: url,
+      imagekitFileId: fileId,
       order: order ? parseInt(order) : 0,
     });
     res.status(201).json({ success: true, message: 'Video uploaded successfully', data: video });
@@ -62,9 +64,10 @@ router.put('/:id', protect, uploadVideo.single('video'), async (req, res) => {
     if (isActive !== undefined) video.isActive  = isActive === 'true' || isActive === true;
 
     if (req.file) {
-      await deleteFromCloudinary(video.cloudinaryPublicId, 'video');
-      video.videoUrl           = req.file.path;
-      video.cloudinaryPublicId = req.file.filename;
+      await deleteFromImageKit(video.imagekitFileId);
+      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/local-videos');
+      video.videoUrl       = url;
+      video.imagekitFileId = fileId;
     }
 
     await video.save();
@@ -80,7 +83,7 @@ router.delete('/:id', protect, async (req, res) => {
     const video = await LocalVideo.findById(req.params.id);
     if (!video) return res.status(404).json({ success: false, message: 'Video not found' });
 
-    await deleteFromCloudinary(video.cloudinaryPublicId, 'video');
+    await deleteFromImageKit(video.imagekitFileId);
     await video.deleteOne();
     res.json({ success: true, message: 'Video deleted successfully' });
   } catch (err) {

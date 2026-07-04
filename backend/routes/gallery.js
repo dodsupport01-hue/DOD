@@ -1,7 +1,7 @@
 const express = require('express');
 const GalleryImage = require('../models/GalleryImage');
 const { protect } = require('../middleware/auth');
-const { uploadGallery, deleteFromCloudinary } = require('../config/cloudinary');
+const { uploadGallery, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
 
 const router = express.Router();
 
@@ -34,11 +34,13 @@ router.post('/', protect, uploadGallery.single('image'), async (req, res) => {
     const { title, caption, order } = req.body;
     if (!title) return res.status(400).json({ success: false, message: 'Title is required' });
 
+    const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/gallery');
+
     const img = await GalleryImage.create({
       title,
       caption: caption || '',
-      imageUrl: req.file.path,
-      cloudinaryPublicId: req.file.filename,
+      imageUrl: url,
+      imagekitFileId: fileId,
       order: order ? parseInt(order) : 0,
     });
     res.status(201).json({ success: true, message: 'Image uploaded successfully', data: img });
@@ -60,9 +62,10 @@ router.put('/:id', protect, uploadGallery.single('image'), async (req, res) => {
     if (isActive !== undefined) img.isActive = isActive === 'true' || isActive === true;
 
     if (req.file) {
-      await deleteFromCloudinary(img.cloudinaryPublicId);
-      img.imageUrl = req.file.path;
-      img.cloudinaryPublicId = req.file.filename;
+      await deleteFromImageKit(img.imagekitFileId);
+      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/gallery');
+      img.imageUrl = url;
+      img.imagekitFileId = fileId;
     }
 
     await img.save();
@@ -78,7 +81,7 @@ router.delete('/:id', protect, async (req, res) => {
     const img = await GalleryImage.findById(req.params.id);
     if (!img) return res.status(404).json({ success: false, message: 'Image not found' });
 
-    await deleteFromCloudinary(img.cloudinaryPublicId);
+    await deleteFromImageKit(img.imagekitFileId);
     await img.deleteOne();
     res.json({ success: true, message: 'Image deleted successfully' });
   } catch (err) {

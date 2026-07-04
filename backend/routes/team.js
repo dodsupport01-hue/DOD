@@ -1,7 +1,7 @@
 const express = require('express');
 const TeamMember = require('../models/TeamMember');
 const { protect } = require('../middleware/auth');
-const { uploadTeam, deleteFromCloudinary } = require('../config/cloudinary');
+const { uploadTeam, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
 
 const router = express.Router();
 
@@ -37,14 +37,22 @@ router.post('/', protect, uploadTeam.single('image'), async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid section value' });
     }
 
+    let imageUrl = '';
+    let imagekitFileId = '';
+    if (req.file) {
+      const uploaded = await uploadToImageKit(req.file, 'dod-healthcare/team');
+      imageUrl = uploaded.url;
+      imagekitFileId = uploaded.fileId;
+    }
+
     const member = await TeamMember.create({
       name,
       designation,
       section,
       email: email || '',
       description: description || '',
-      imageUrl: req.file ? req.file.path : '',
-      cloudinaryPublicId: req.file ? req.file.filename : '',
+      imageUrl,
+      imagekitFileId,
       order: order ? parseInt(order) : 0,
       isActive: isActive !== 'false',
     });
@@ -76,9 +84,10 @@ router.put('/:id', protect, uploadTeam.single('image'), async (req, res) => {
     if (isActive !== undefined) member.isActive = isActive === 'true' || isActive === true;
 
     if (req.file) {
-      await deleteFromCloudinary(member.cloudinaryPublicId);
-      member.imageUrl = req.file.path;
-      member.cloudinaryPublicId = req.file.filename;
+      await deleteFromImageKit(member.imagekitFileId);
+      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/team');
+      member.imageUrl = url;
+      member.imagekitFileId = fileId;
     }
 
     await member.save();
@@ -94,7 +103,7 @@ router.delete('/:id', protect, async (req, res) => {
     const member = await TeamMember.findById(req.params.id);
     if (!member) return res.status(404).json({ success: false, message: 'Team member not found' });
 
-    await deleteFromCloudinary(member.cloudinaryPublicId);
+    await deleteFromImageKit(member.imagekitFileId);
     await member.deleteOne();
     res.json({ success: true, message: 'Team member deleted successfully' });
   } catch (err) {

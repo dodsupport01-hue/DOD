@@ -7,7 +7,8 @@ const teamMemberSchema = new mongoose.Schema({
   email:              { type: String, default: '', trim: true, lowercase: true },
   description:        { type: String, default: '' },
   imageUrl:           { type: String, default: '' },
-  cloudinaryPublicId: { type: String },
+  cloudinaryPublicId: { type: String }, // legacy — kept during ImageKit migration
+  imagekitFileId:     { type: String }, // ImageKit fileId, used for deletion
   order:              { type: Number, default: 0 },
   isActive:           { type: Boolean, default: true },
 }, { timestamps: true });

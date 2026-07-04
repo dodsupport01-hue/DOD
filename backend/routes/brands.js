@@ -1,7 +1,7 @@
 const express = require('express');
 const Brand = require('../models/Brand');
 const { protect } = require('../middleware/auth');
-const { uploadBrand, deleteFromCloudinary } = require('../config/cloudinary');
+const { uploadBrand, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
 
 const router = express.Router();
 
@@ -34,11 +34,13 @@ router.post('/', protect, uploadBrand.single('logo'), async (req, res) => {
 
     const { name, altText, order } = req.body;
 
+    const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/brands');
+
     const brand = await Brand.create({
       name,
       altText: altText || name,
-      logoUrl: req.file.path,
-      cloudinaryPublicId: req.file.filename,
+      logoUrl: url,
+      imagekitFileId: fileId,
       order: order ? parseInt(order) : 0,
     });
 
@@ -61,11 +63,12 @@ router.put('/:id', protect, uploadBrand.single('logo'), async (req, res) => {
     if (order !== undefined) brand.order = parseInt(order);
     if (isActive !== undefined) brand.isActive = isActive === 'true' || isActive === true;
 
-    // If new image uploaded, delete old one from Cloudinary
+    // If new image uploaded, delete old one from ImageKit
     if (req.file) {
-      await deleteFromCloudinary(brand.cloudinaryPublicId);
-      brand.logoUrl = req.file.path;
-      brand.cloudinaryPublicId = req.file.filename;
+      await deleteFromImageKit(brand.imagekitFileId);
+      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/brands');
+      brand.logoUrl = url;
+      brand.imagekitFileId = fileId;
     }
 
     await brand.save();
@@ -81,7 +84,7 @@ router.delete('/:id', protect, async (req, res) => {
     const brand = await Brand.findById(req.params.id);
     if (!brand) return res.status(404).json({ success: false, message: 'Brand not found' });
 
-    await deleteFromCloudinary(brand.cloudinaryPublicId);
+    await deleteFromImageKit(brand.imagekitFileId);
     await brand.deleteOne();
 
     res.json({ success: true, message: 'Brand deleted successfully' });

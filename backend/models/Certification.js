@@ -20,7 +20,10 @@ const certificationSchema = new mongoose.Schema({
     default: '',
   },
   cloudinaryPublicId: {
-    type: String,
+    type: String, // legacy — kept during ImageKit migration
+  },
+  imagekitFileId: {
+    type: String, // ImageKit fileId, used for deletion
   },
   sealEmoji: {
     type: String,
