@@ -6,7 +6,7 @@
   <title>Admin Login | DOD Healthcare</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
 </head>
 <body class="login-body">
 
@@ -87,7 +87,7 @@
 
     // ─── Redirect if already logged in ──────────────────────────────────────
     if (localStorage.getItem('dod_admin_token')) {
-      window.location.href = 'dashboard.html';
+      window.location.href = '/admin/dashboard.html';
     }
 
     // ─── Login Form Submit ───────────────────────────────────────────────────
@@ -117,7 +117,7 @@
           localStorage.setItem('dod_admin_token', data.token);
           localStorage.setItem('dod_admin_info', JSON.stringify(data.admin));
           showAlert('Login successful! Redirecting...', 'success');
-          setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+          setTimeout(() => { window.location.href = '/admin/dashboard.html'; }, 800);
         }
       } catch (err) {
         showAlert('Cannot connect to server. Make sure backend is running.');

@@ -18,7 +18,16 @@
       "Bash(nslookup dodsmarthealth.com)",
       "Bash(nslookup www.dodsmarthealth.com)",
       "Bash(curl -s -m 30 -o - -w \"\\\\nHTTP Status: %{http_code}\\\\n\" https://api.dodsmarthealth.com/api/health)",
-      "Bash(nslookup dodsmarthealth.com 8.8.8.8)"
+      "Bash(nslookup dodsmarthealth.com 8.8.8.8)",
+      "Bash(IMAGEKIT_PUBLIC_KEY=x IMAGEKIT_PRIVATE_KEY=x IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/x node -e ' *)",
+      "Bash(node scripts/migrate-to-imagekit.js --dry-run)",
+      "PowerShell(Write-Output \"=== SRV record lookup \\(what MongoDB needs\\) ===\"; try { Resolve-DnsName -Type SRV _mongodb._tcp.cluster0.slyp9fk.mongodb.net -ErrorAction Stop | Format-Table -AutoSize } catch { Write-Output \"SRV FAILED: $\\($_.Exception.Message\\)\" }; Write-Output \"\"; Write-Output \"=== Current DNS servers ===\"; Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object {$_.ServerAddresses} | Format-Table InterfaceAlias, ServerAddresses -AutoSize)",
+      "PowerShell(node scripts/migrate-to-imagekit.js --dry-run)",
+      "PowerShell(node \"d:\\\\websitem\\\\DOD\\\\backend\\\\scripts\\\\migrate-to-imagekit.js\" --dry-run)",
+      "PowerShell(node \"d:\\\\websitem\\\\DOD\\\\backend\\\\scripts\\\\migrate-to-imagekit.js\")",
+      "PowerShell(node \"d:\\\\websitem\\\\DOD\\\\backend\\\\scripts\\\\_check.js\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://res.cloudinary.com/dvcve8dz8/image/upload/v1773851789/dod-healthcare/brands/g9z1akinfrwi8mwxps3l.png\")",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://res.cloudinary.com/dvcve8dz8/image/upload/sample.jpg\")"
     ]
   }
 }
