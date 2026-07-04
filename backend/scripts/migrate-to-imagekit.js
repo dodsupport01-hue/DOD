@@ -19,11 +19,29 @@
  *    node scripts/migrate-to-imagekit.js --dry-run
  */
 
-require('dotenv').config();
+const path = require('path');
+// Load backend/.env regardless of the current working directory
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const mongoose = require('mongoose');
 const https = require('https');
 const http = require('http');
+
+// Some home routers refuse the DNS SRV query that mongodb+srv:// needs, which
+// makes Node fail with "querySrv ECONNREFUSED" even though the OS can resolve it.
+// Point Node's resolver at Google/Cloudflare DNS just for this script.
+const dns = require('dns');
+try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch { /* ignore */ }
+
 const { getImageKit } = require('../config/imagekit');
+
+// Cloudinary SDK — used to generate SIGNED download URLs for accounts that have
+// "restricted media access" turned on (public delivery URLs return HTTP 401).
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
@@ -35,12 +53,23 @@ const TeamMember    = require('../models/TeamMember');
 const LocalVideo    = require('../models/LocalVideo');
 
 const TARGETS = [
-  { name: 'Brand',         Model: Brand,         urlField: 'logoUrl',   folder: 'dod-healthcare/brands' },
-  { name: 'Certification', Model: Certification, urlField: 'logoUrl',   folder: 'dod-healthcare/certifications' },
-  { name: 'GalleryImage',  Model: GalleryImage,  urlField: 'imageUrl',  folder: 'dod-healthcare/gallery' },
-  { name: 'TeamMember',    Model: TeamMember,    urlField: 'imageUrl',  folder: 'dod-healthcare/team' },
-  { name: 'LocalVideo',    Model: LocalVideo,    urlField: 'videoUrl',  folder: 'dod-healthcare/local-videos' },
+  { name: 'Brand',         Model: Brand,         urlField: 'logoUrl',   folder: 'dod-healthcare/brands',         resourceType: 'image' },
+  { name: 'Certification', Model: Certification, urlField: 'logoUrl',   folder: 'dod-healthcare/certifications', resourceType: 'image' },
+  { name: 'GalleryImage',  Model: GalleryImage,  urlField: 'imageUrl',  folder: 'dod-healthcare/gallery',        resourceType: 'image' },
+  { name: 'TeamMember',    Model: TeamMember,    urlField: 'imageUrl',  folder: 'dod-healthcare/team',           resourceType: 'image' },
+  { name: 'LocalVideo',    Model: LocalVideo,    urlField: 'videoUrl',  folder: 'dod-healthcare/local-videos',   resourceType: 'video' },
 ];
+
+// Build a SIGNED Cloudinary delivery URL from a public id. Works even when the
+// account restricts public media access (which returns 401 on plain URLs).
+function signedCloudinaryUrl(publicId, resourceType) {
+  return cloudinary.url(publicId, {
+    resource_type: resourceType,
+    type: 'upload',
+    secure: true,
+    sign_url: true,
+  });
+}
 
 // Download a remote URL into a Buffer
 function download(url) {
@@ -73,7 +102,7 @@ function fileNameFrom(url, id) {
   }
 }
 
-async function migrateModel({ name, Model, urlField, folder }) {
+async function migrateModel({ name, Model, urlField, folder, resourceType }) {
   const docs = await Model.find({});
   let migrated = 0, skipped = 0, failed = 0;
 
@@ -97,7 +126,23 @@ async function migrateModel({ name, Model, urlField, folder }) {
         continue;
       }
 
-      const buffer = await download(url);
+      // Prefer a signed Cloudinary URL when we have the public id — this works
+      // even if the account restricts public delivery (which caused HTTP 401).
+      // Fall back to the stored URL otherwise.
+      let downloadUrl = url;
+      if (doc.cloudinaryPublicId) {
+        downloadUrl = signedCloudinaryUrl(doc.cloudinaryPublicId, resourceType);
+      }
+
+      let buffer;
+      try {
+        buffer = await download(downloadUrl);
+      } catch (e) {
+        // If the signed URL failed, try the raw stored URL as a last resort.
+        if (downloadUrl !== url) buffer = await download(url);
+        else throw e;
+      }
+
       const uploaded = await getImageKit().upload({
         file: buffer,
         fileName: fileNameFrom(url, doc._id),
