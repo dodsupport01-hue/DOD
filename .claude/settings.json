@@ -27,7 +27,16 @@
       "PowerShell(node \"d:\\\\websitem\\\\DOD\\\\backend\\\\scripts\\\\migrate-to-imagekit.js\")",
       "PowerShell(node \"d:\\\\websitem\\\\DOD\\\\backend\\\\scripts\\\\_check.js\")",
       "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://res.cloudinary.com/dvcve8dz8/image/upload/v1773851789/dod-healthcare/brands/g9z1akinfrwi8mwxps3l.png\")",
-      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://res.cloudinary.com/dvcve8dz8/image/upload/sample.jpg\")"
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"https://res.cloudinary.com/dvcve8dz8/image/upload/sample.jpg\")",
+      "Bash(curl -s -m 25 -o /dev/null -w \"HTTP %{http_code} | time_total=%{time_total}s\\\\n\" https://api.dodsmarthealth.com/api/health)",
+      "Bash(curl -s -m 25 https://api.dodsmarthealth.com/api/health)",
+      "Bash(curl -s -m 30 -o /dev/null -w \"onrender: HTTP %{http_code} | time=%{time_total}s\\\\n\" https://dod-healthcare-api.onrender.com/api/health)",
+      "Bash(curl -s -m 30 https://dod-healthcare-api.onrender.com/api/health)",
+      "Bash(curl -s -m 30 -i -X OPTIONS https://dod-healthcare-api.onrender.com/api/auth/login -H 'Origin: https://dodsmarthealth.com' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type')",
+      "Bash(curl -s -m 30 -o - -w '\\\\nHTTP %{http_code}\\\\n' -X POST https://dod-healthcare-api.onrender.com/api/auth/login -H 'Content-Type: application/json' -H 'Origin: https://dodsmarthealth.com' -d '{\"email\":\"test@test.com\",\"password\":\"wrong\"}')",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
