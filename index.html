@@ -4781,14 +4781,43 @@
             </div>
         </div>
 
-        <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-LESY6RTJTF"></script>
+        <!-- Google tag (gtag.js) — deferred.
+             gtag.js is ~160KB and competed with rendering on mobile. dataLayer
+             and gtag() are defined right away so any calls made before the
+             script arrives are queued and replayed once it loads; only the
+             network fetch waits for first interaction or browser idle. -->
         <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag("js", new Date());
+            gtag("config", "G-LESY6RTJTF");
 
-        gtag('config', 'G-LESY6RTJTF');
+            (function () {
+                var loaded = false;
+                function loadGtag() {
+                    if (loaded) return;
+                    loaded = true;
+                    var s = document.createElement("script");
+                    s.async = true;
+                    s.src = "https://www.googletagmanager.com/gtag/js?id=G-LESY6RTJTF";
+                    document.head.appendChild(s);
+                }
+
+                var events = ["scroll", "touchstart", "pointerdown", "keydown"];
+                events.forEach(function (e) {
+                    window.addEventListener(e, loadGtag, { once: true, passive: true });
+                });
+
+                // Fall back to idle time so a visitor who never interacts is
+                // still counted; cap the wait so it always fires.
+                if ("requestIdleCallback" in window) {
+                    requestIdleCallback(loadGtag, { timeout: 5000 });
+                } else {
+                    setTimeout(loadGtag, 3000);
+                }
+            })();
         </script>
 
         <script>
