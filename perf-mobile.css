@@ -177,22 +177,57 @@ html.no-js [data-aos] {
     }
 }
 
-/* ── 2b. SPLINE 3D FALLBACK (mobile / low-power) ─────────────
-   The WebGL scene is skipped on phones (it blocked first paint by ~5s).
-   Show a lightweight CSS poster so the widget still looks complete.
+/* ── 2b. SPLINE 3D SCENE (incl. mobile) ──────────────────────
+   The scene now runs on phones too, loaded only when scrolled to. While the
+   WebGL runtime downloads, the canvas sits on a shimmering placeholder so the
+   slot is never an empty box. The .mc-spline-off poster is the fallback for
+   reduced-motion / data-saver / no-WebGL devices.
 --------------------------------------------------------------- */
+
+/* Shared "panel" look used by both the loading state and the poster. */
+.mc-body-widget.mc-spline-loading .mc-spline-canvas,
+.mc-body-widget.mc-spline-off::before {
+    background:
+        radial-gradient(120% 70% at 50% 18%, rgba(14, 165, 233, 0.22), transparent 60%),
+        linear-gradient(160deg, #eef4fb 0%, #dfe9f5 55%, #d3e2f1 100%);
+    border: 1px solid rgba(14, 165, 233, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    border-radius: 12px;
+}
+
+/* Placeholder shown while the 3D runtime is downloading. */
+.mc-body-widget.mc-spline-loading .mc-spline-canvas {
+    animation: splinePulse 1.4s ease-in-out infinite;
+}
+
+@keyframes splinePulse {
+    0%,
+    100% {
+        opacity: 0.65;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Fade the scene in once it has actually rendered. */
+.mc-body-widget.mc-spline-ready .mc-spline-canvas {
+    animation: mediaFadeIn 0.5s ease both;
+}
+
+/* Static poster for devices that never load the scene. */
 .mc-body-widget.mc-spline-off::before {
     content: "";
     display: block;
     width: 100%;
     max-width: 340px;
     aspect-ratio: 7/12;
-    border-radius: 12px;
-    background:
-        radial-gradient(120% 70% at 50% 18%, rgba(14, 165, 233, 0.22), transparent 60%),
-        linear-gradient(160deg, #eef4fb 0%, #dfe9f5 55%, #d3e2f1 100%);
-    border: 1px solid rgba(14, 165, 233, 0.18);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mc-body-widget.mc-spline-loading .mc-spline-canvas {
+        animation: none;
+    }
 }
 
 /* ── 3. IMAGE / IFRAME LOADING POLISH ────────────────────────

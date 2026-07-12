@@ -1789,59 +1789,118 @@
                         </style>
                         <script>
                             // Spline is a WebGL scene: ~1MB of runtime JS plus a live render
-                            // loop. Loading it eagerly blocked first paint for ~5s on a
-                            // throttled phone, so:
-                            //   - phones / reduced-motion / low-core devices never load it
-                            //   - everyone else loads it only when it scrolls into view
+                            // loop. Loading it eagerly blocked first paint for ~5s on a phone.
+                            // It now runs on mobile too, but only when the user actually
+                            // reaches it, and it stops rendering whenever it is off-screen or
+                            // the tab is hidden so it does not burn battery or cause jank.
+                            //
+                            // Only visitors who explicitly asked for less motion, or whose
+                            // browser reports data-saver / no WebGL, get the static poster.
                             (function () {
                                 const canvas = document.getElementById("mc-spline-canvas");
                                 if (!canvas) return;
 
-                                const isSmall = window.matchMedia("(max-width: 900px)").matches;
-                                const coarse = window.matchMedia("(pointer: coarse)").matches;
-                                const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-                                const weak = (navigator.hardwareConcurrency || 8) <= 4;
-                                const saveData = navigator.connection && navigator.connection.saveData;
-
-                                if (isSmall || coarse || reduced || weak || saveData) {
-                                    // Skip the 3D scene on mobile/low-power: show the static
-                                    // poster instead so the section still looks complete.
-                                    canvas.closest(".mc-body-widget")?.classList.add("mc-spline-off");
+                                const widget = canvas.closest(".mc-body-widget");
+                                const posterOnly = () => {
+                                    if (widget) widget.classList.add("mc-spline-off");
                                     canvas.remove();
+                                };
+
+                                const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+                                const saveData = navigator.connection && navigator.connection.saveData;
+                                const hasWebGL = (function () {
+                                    try {
+                                        const c = document.createElement("canvas");
+                                        return !!(c.getContext("webgl") || c.getContext("experimental-webgl"));
+                                    } catch (e) {
+                                        return false;
+                                    }
+                                })();
+
+                                if (reduced || saveData || !hasWebGL) {
+                                    posterOnly();
                                     return;
                                 }
 
+                                let app = null;
                                 let started = false;
-                                const start = () => {
+
+                                function start() {
                                     if (started) return;
                                     started = true;
+                                    widget && widget.classList.add("mc-spline-loading");
+
                                     import("https://esm.sh/@splinetool/runtime")
-                                        .then(({ Application }) => {
-                                            const app = new Application(canvas);
-                                            app.load("https://prod.spline.design/0eI7JO23zWEe8FiA/scene.splinecode");
-                                            const ro = new ResizeObserver(() => {
+                                        .then(function (mod) {
+                                            app = new mod.Application(canvas);
+                                            return app.load("https://prod.spline.design/0eI7JO23zWEe8FiA/scene.splinecode");
+                                        })
+                                        .then(function () {
+                                            widget && widget.classList.remove("mc-spline-loading");
+                                            widget && widget.classList.add("mc-spline-ready");
+                                            const ro = new ResizeObserver(function () {
                                                 canvas.width = canvas.offsetWidth;
                                                 canvas.height = canvas.offsetHeight;
                                             });
                                             ro.observe(canvas);
                                         })
-                                        .catch((e) => console.warn("Spline failed to load:", e.message));
-                                };
+                                        .catch(function (e) {
+                                            // Never leave a blank box: fall back to the poster.
+                                            console.warn("Spline failed to load:", e.message);
+                                            posterOnly();
+                                        });
+                                }
+
+                                // Pause/resume the render loop so an off-screen scene costs nothing.
+                                function setPlaying(on) {
+                                    if (!app) return;
+                                    try {
+                                        on ? app.play() : app.stop();
+                                    } catch (e) {
+                                        /* older runtime without play/stop */
+                                    }
+                                }
+
+                                // Never contend with the initial page load: hold everything
+                                // until the page has finished loading and the main thread is
+                                // idle, THEN start watching for the scene to scroll into view.
+                                function whenIdle(fn) {
+                                    const go = function () {
+                                        if ("requestIdleCallback" in window) requestIdleCallback(fn, { timeout: 2000 });
+                                        else setTimeout(fn, 200);
+                                    };
+                                    if (document.readyState === "complete") go();
+                                    else addEventListener("load", go, { once: true });
+                                }
 
                                 if ("IntersectionObserver" in window) {
-                                    const io = new IntersectionObserver(
-                                        (entries, obs) => {
-                                            if (entries.some((e) => e.isIntersecting)) {
-                                                obs.disconnect();
-                                                start();
-                                            }
+                                    whenIdle(function () {
+                                        // Load just before it comes into view so it is ready on arrival.
+                                        new IntersectionObserver(
+                                            function (entries, obs) {
+                                                if (entries.some((e) => e.isIntersecting)) {
+                                                    obs.disconnect();
+                                                    start();
+                                                }
+                                            },
+                                            { rootMargin: "200px" },
+                                        ).observe(canvas);
+                                    });
+
+                                    // Once loaded, only render while it is actually visible.
+                                    new IntersectionObserver(
+                                        function (entries) {
+                                            setPlaying(entries.some((e) => e.isIntersecting));
                                         },
-                                        { rootMargin: "300px" },
-                                    );
-                                    io.observe(canvas);
+                                        { threshold: 0.01 },
+                                    ).observe(canvas);
                                 } else {
-                                    window.addEventListener("load", start, { once: true });
+                                    addEventListener("load", start, { once: true });
                                 }
+
+                                document.addEventListener("visibilitychange", function () {
+                                    setPlaying(!document.hidden);
+                                });
                             })();
                         </script>
                     </div>
