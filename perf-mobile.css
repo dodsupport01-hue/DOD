@@ -1,0 +1,217 @@
+/* ============================================================
+   perf-mobile.css
+   Mobile performance + skeleton loaders + AOS safety net.
+   Loaded AFTER styles.css / styles-additions.css so it wins.
+   ============================================================ */
+
+/* ── 1. AOS SAFETY NET ───────────────────────────────────────
+   Problem: [data-aos] elements start at opacity:0 and only become
+   visible when script.js (deferred) runs the IntersectionObserver.
+   On mobile / slow devices this leaves whole sections blank if JS
+   is slow, errors, or the observer threshold is never met.
+
+   Fix:
+   - If JS is disabled, force everything visible (.no-js handled below
+     via <html class="no-js">; we also cover the plain case).
+   - A hard CSS animation fallback reveals any element still hidden a
+     few seconds after load, so nothing can stay invisible forever.
+--------------------------------------------------------------- */
+
+/* When JS never runs, show all animated content immediately. */
+html.no-js [data-aos] {
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* Failsafe reveal: if the reveal script somehow never runs, this keyframe
+   forces every animated element visible shortly after paint, so a section
+   can never be left permanently blank. Elements the script reveals get
+   .aos-animate and simply transition normally. */
+@keyframes aosFailsafeReveal {
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+[data-aos] {
+    animation: aosFailsafeReveal 0.3s linear 1.5s forwards;
+}
+
+/* On small screens keep the reveal snappy rather than a slow 0.8s fade. */
+@media (max-width: 768px) {
+    [data-aos] {
+        transition-duration: 0.4s;
+    }
+}
+
+/* Respect users who don't want motion: show everything instantly. */
+@media (prefers-reduced-motion: reduce) {
+    [data-aos] {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* ── 2. SKELETON LOADERS ─────────────────────────────────────
+   Shown inside API-driven sections (brands, gallery, videos,
+   media, certifications) while data is fetched from the backend.
+   Removed automatically once real content is injected.
+--------------------------------------------------------------- */
+
+.skeleton,
+.sk-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: #e9edf2;
+    border-radius: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .skeleton,
+    .sk-shimmer {
+        background: #23272e;
+    }
+}
+
+.skeleton::after,
+.sk-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0.55) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: skShimmer 1.3s infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+    .skeleton::after,
+    .sk-shimmer::after {
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0) 100%
+        );
+    }
+}
+
+@keyframes skShimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton::after,
+    .sk-shimmer::after {
+        animation: none;
+    }
+}
+
+/* Skeleton container that holds placeholder tiles */
+.skeleton-wrap {
+    display: grid;
+    gap: 1.25rem;
+    width: 100%;
+}
+
+/* Video / media / gallery card skeleton grids */
+.skeleton-wrap.sk-videos {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+.skeleton-wrap.sk-gallery {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.skeleton-wrap.sk-media {
+    grid-template-columns: 1fr;
+    max-width: 760px;
+    margin: 0 auto;
+}
+.skeleton-wrap.sk-brands,
+.skeleton-wrap.sk-certs {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(120px, 1fr);
+    overflow: hidden;
+}
+
+/* Individual skeleton shapes */
+.sk-card {
+    height: 210px;
+}
+.sk-card.sk-video {
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 like the real yt-embed */
+    height: auto;
+}
+.sk-card.sk-media-row {
+    height: 120px;
+}
+.sk-card.sk-logo {
+    height: 90px;
+    border-radius: 10px;
+}
+.sk-card.sk-tile {
+    height: 180px;
+}
+
+@media (max-width: 768px) {
+    .skeleton-wrap {
+        gap: 0.9rem;
+    }
+    .skeleton-wrap.sk-videos {
+        grid-template-columns: 1fr;
+    }
+    .skeleton-wrap.sk-gallery {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .sk-card {
+        height: 170px;
+    }
+}
+
+/* ── 2b. SPLINE 3D FALLBACK (mobile / low-power) ─────────────
+   The WebGL scene is skipped on phones (it blocked first paint by ~5s).
+   Show a lightweight CSS poster so the widget still looks complete.
+--------------------------------------------------------------- */
+.mc-body-widget.mc-spline-off::before {
+    content: "";
+    display: block;
+    width: 100%;
+    max-width: 340px;
+    aspect-ratio: 7/12;
+    border-radius: 12px;
+    background:
+        radial-gradient(120% 70% at 50% 18%, rgba(14, 165, 233, 0.22), transparent 60%),
+        linear-gradient(160deg, #eef4fb 0%, #dfe9f5 55%, #d3e2f1 100%);
+    border: 1px solid rgba(14, 165, 233, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* ── 3. IMAGE / IFRAME LOADING POLISH ────────────────────────
+   Reserve space & fade media in so layout doesn't jump on mobile.
+--------------------------------------------------------------- */
+
+.yt-embed-wrap iframe,
+.dg-cell img,
+.ns-card,
+.bp-logo-slot img {
+    /* smooth fade-in when the real asset paints */
+    animation: mediaFadeIn 0.4s ease both;
+}
+
+@keyframes mediaFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

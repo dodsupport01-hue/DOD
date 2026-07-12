@@ -1,6 +1,11 @@
 ﻿<!doctype html>
-<html lang="en-IN">
+<html lang="en-IN" class="no-js">
     <head>
+        <!-- Remove no-js immediately so JS-driven reveals work; if JS is
+             off, .no-js stays and CSS forces all sections visible. -->
+        <script>
+            document.documentElement.classList.remove("no-js");
+        </script>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -114,6 +119,55 @@
         <!-- ================ STYLES ================ -->
         <link rel="stylesheet" href="styles.css" />
         <link rel="stylesheet" href="styles-additions.css" />
+        <link rel="stylesheet" href="perf-mobile.css" />
+        <link rel="preconnect" href="https://dod-healthcare-api.onrender.com" crossorigin />
+
+        <!-- Scroll-reveal (AOS) is wired up here, NOT in the deferred script.js.
+             script.js loads at the end of <body> behind other scripts, so on a
+             phone it ran ~2s late and every [data-aos] section (which starts at
+             opacity:0) stayed blank until then. Running it early makes sections
+             appear as soon as they are scrolled to. -->
+        <script>
+            (function () {
+                function reveal(el) {
+                    el.classList.add("aos-animate");
+                }
+                function init() {
+                    var els = document.querySelectorAll("[data-aos]");
+                    if (!("IntersectionObserver" in window)) {
+                        for (var i = 0; i < els.length; i++) reveal(els[i]);
+                        return;
+                    }
+                    var io = new IntersectionObserver(
+                        function (entries, obs) {
+                            entries.forEach(function (e) {
+                                if (e.isIntersecting) {
+                                    reveal(e.target);
+                                    obs.unobserve(e.target);
+                                }
+                            });
+                        },
+                        // Tiny threshold + bottom margin: a tall section on a small
+                        // screen may never reach a high visibility ratio.
+                        { threshold: 0.01, rootMargin: "0px 0px 120px 0px" },
+                    );
+                    els.forEach(function (el) {
+                        io.observe(el);
+                    });
+
+                    // Anything already on screen reveals right away.
+                    els.forEach(function (el) {
+                        var r = el.getBoundingClientRect();
+                        if (r.top < innerHeight && r.bottom > 0) reveal(el);
+                    });
+                }
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", init);
+                } else {
+                    init();
+                }
+            })();
+        </script>
         <link
             href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"
             rel="stylesheet"
@@ -1733,17 +1787,62 @@
                                 text-transform: uppercase;
                             }
                         </style>
-                        <script type="module">
-                            import { Application } from "https://esm.sh/@splinetool/runtime";
-                            const canvas = document.getElementById("mc-spline-canvas");
-                            const app = new Application(canvas);
-                            app.load("https://prod.spline.design/0eI7JO23zWEe8FiA/scene.splinecode");
-                            // Keep canvas pixel size in sync with CSS layout size
-                            const ro = new ResizeObserver(() => {
-                                canvas.width = canvas.offsetWidth;
-                                canvas.height = canvas.offsetHeight;
-                            });
-                            ro.observe(canvas);
+                        <script>
+                            // Spline is a WebGL scene: ~1MB of runtime JS plus a live render
+                            // loop. Loading it eagerly blocked first paint for ~5s on a
+                            // throttled phone, so:
+                            //   - phones / reduced-motion / low-core devices never load it
+                            //   - everyone else loads it only when it scrolls into view
+                            (function () {
+                                const canvas = document.getElementById("mc-spline-canvas");
+                                if (!canvas) return;
+
+                                const isSmall = window.matchMedia("(max-width: 900px)").matches;
+                                const coarse = window.matchMedia("(pointer: coarse)").matches;
+                                const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                                const weak = (navigator.hardwareConcurrency || 8) <= 4;
+                                const saveData = navigator.connection && navigator.connection.saveData;
+
+                                if (isSmall || coarse || reduced || weak || saveData) {
+                                    // Skip the 3D scene on mobile/low-power: show the static
+                                    // poster instead so the section still looks complete.
+                                    canvas.closest(".mc-body-widget")?.classList.add("mc-spline-off");
+                                    canvas.remove();
+                                    return;
+                                }
+
+                                let started = false;
+                                const start = () => {
+                                    if (started) return;
+                                    started = true;
+                                    import("https://esm.sh/@splinetool/runtime")
+                                        .then(({ Application }) => {
+                                            const app = new Application(canvas);
+                                            app.load("https://prod.spline.design/0eI7JO23zWEe8FiA/scene.splinecode");
+                                            const ro = new ResizeObserver(() => {
+                                                canvas.width = canvas.offsetWidth;
+                                                canvas.height = canvas.offsetHeight;
+                                            });
+                                            ro.observe(canvas);
+                                        })
+                                        .catch((e) => console.warn("Spline failed to load:", e.message));
+                                };
+
+                                if ("IntersectionObserver" in window) {
+                                    const io = new IntersectionObserver(
+                                        (entries, obs) => {
+                                            if (entries.some((e) => e.isIntersecting)) {
+                                                obs.disconnect();
+                                                start();
+                                            }
+                                        },
+                                        { rootMargin: "300px" },
+                                    );
+                                    io.observe(canvas);
+                                } else {
+                                    window.addEventListener("load", start, { once: true });
+                                }
+                            })();
                         </script>
                     </div>
 
@@ -4703,33 +4802,67 @@
                 return d.innerHTML;
             }
 
-            async function fetchWithRetry(url, retries = 3, delay = 3000) {
+            async function fetchWithRetry(url, retries = 3, delay = 2500) {
                 for (let i = 0; i < retries; i++) {
                     try {
-                        const res = await fetch(url);
+                        // Abort a stalled request so we don't hang for minutes on
+                        // a sleeping backend; retry loop then wakes it up.
+                        const ctrl = new AbortController();
+                        const t = setTimeout(() => ctrl.abort(), 12000);
+                        const res = await fetch(url, { signal: ctrl.signal });
+                        clearTimeout(t);
                         if (res.ok) return res;
                     } catch (e) {
-                        if (i < retries - 1) await new Promise((r) => setTimeout(r, delay));
+                        /* network error / timeout — fall through to retry */
                     }
+                    if (i < retries - 1) await new Promise((r) => setTimeout(r, delay));
                 }
                 return null;
+            }
+
+            // ── Skeleton helpers ──────────────────────────────────────────
+            function skeleton(kind, count) {
+                const shapes = {
+                    videos: '<div class="sk-card sk-shimmer sk-video"></div>',
+                    gallery: '<div class="sk-card sk-shimmer sk-tile"></div>',
+                    media: '<div class="sk-card sk-shimmer sk-media-row"></div>',
+                    brands: '<div class="sk-card sk-shimmer sk-logo"></div>',
+                    certs: '<div class="sk-card sk-shimmer sk-tile"></div>',
+                };
+                const cls = { videos: "sk-videos", gallery: "sk-gallery", media: "sk-media", brands: "sk-brands", certs: "sk-certs" }[kind] || "";
+                return `<div class="skeleton-wrap ${cls}" data-skeleton>${(shapes[kind] || "").repeat(count)}</div>`;
+            }
+            function showSkeleton(container, kind, count) {
+                if (container) container.innerHTML = skeleton(kind, count);
+            }
+            function clearSkeleton(container) {
+                const sk = container && container.querySelector("[data-skeleton]");
+                if (sk) sk.remove();
+            }
+            // Section has no static fallback content: if the API never answers,
+            // hide the whole section rather than leaving an empty gap on mobile.
+            function hideSectionOf(container) {
+                const section = container && container.closest("section");
+                if (section) section.style.display = "none";
             }
 
             // ====== Brands ======
             async function loadBrandsFromAPI() {
                 const track = document.getElementById("brands-track");
                 if (!track) return;
+                showSkeleton(track, "brands", 8);
                 try {
                     const res = await fetchWithRetry(`${BACKEND_URL}/api/brands`);
-                    if (!res) return;
+                    if (!res) { clearSkeleton(track); hideSectionOf(track); return; }
                     const json = await res.json();
-                    if (!json.success || !json.data.length) return;
+                    if (!json.success || !json.data.length) { clearSkeleton(track); hideSectionOf(track); return; }
 
                     const slots = json.data
                         .map((b) => `<div class="bp-logo-slot"><img src="${esc(b.logoUrl)}" alt="${esc(b.altText || b.name)}" loading="lazy" title="${esc(b.name)}"></div>`)
                         .join("");
                     track.innerHTML = slots + slots; // duplicate for seamless loop
                 } catch (err) {
+                    clearSkeleton(track);
                     console.warn("Brands API error:", err.message);
                 }
             }
@@ -4738,11 +4871,12 @@
             async function loadCertificationsFromAPI() {
                 const grid = document.getElementById("certifications-grid");
                 if (!grid) return;
+                showSkeleton(grid, "certs", 6);
                 try {
                     const res = await fetchWithRetry(`${BACKEND_URL}/api/certifications`);
-                    if (!res) return;
+                    if (!res) { clearSkeleton(grid); hideSectionOf(grid); return; }
                     const json = await res.json();
-                    if (!json.success || !json.data.length) return;
+                    if (!json.success || !json.data.length) { clearSkeleton(grid); hideSectionOf(grid); return; }
 
                     const slots = json.data
                         .map(
@@ -4764,6 +4898,7 @@
 
                     grid.innerHTML = slots + slots;
                 } catch (err) {
+                    clearSkeleton(grid);
                     console.warn("Certifications API error:", err.message);
                 }
             }
@@ -4772,11 +4907,12 @@
             async function loadGalleryFromAPI() {
                 const collage = document.querySelector(".dg-collage");
                 if (!collage) return;
+                showSkeleton(collage, "gallery", 8);
                 try {
                     const res = await fetchWithRetry(`${BACKEND_URL}/api/gallery`);
-                    if (!res) return;
+                    if (!res) { clearSkeleton(collage); hideSectionOf(collage); return; }
                     const json = await res.json();
-                    if (!json.success || !json.data.length) return;
+                    if (!json.success || !json.data.length) { clearSkeleton(collage); hideSectionOf(collage); return; }
 
                     const cols = [[], [], [], []];
                     json.data.forEach((img, i) => cols[i % 4].push(img));
@@ -4806,6 +4942,7 @@
                     });
                     window._dgCells = newCells;
                 } catch (err) {
+                    clearSkeleton(collage);
                     console.warn("Gallery API error:", err.message);
                 }
             }
@@ -4814,11 +4951,12 @@
             async function loadVideosFromAPI() {
                 const grid = document.querySelector(".yt-grid");
                 if (!grid) return;
+                showSkeleton(grid, "videos", 3);
                 try {
                     const res = await fetchWithRetry(`${BACKEND_URL}/api/videos`);
-                    if (!res) return;
+                    if (!res) { clearSkeleton(grid); hideSectionOf(grid); return; }
                     const json = await res.json();
-                    if (!json.success || !json.data.length) return;
+                    if (!json.success || !json.data.length) { clearSkeleton(grid); hideSectionOf(grid); return; }
 
                     grid.innerHTML = json.data
                         .map((v) => {
@@ -4839,6 +4977,7 @@
                         })
                         .join("");
                 } catch (err) {
+                    clearSkeleton(grid);
                     console.warn("Videos API error:", err.message);
                 }
             }

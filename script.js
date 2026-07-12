@@ -88,23 +88,8 @@ statNumbers.forEach(stat => {
 // Slideshow section removed — no slideshow code needed.
 
 // ===== Scroll Animations (AOS) =====
-const observerOptions = {
-    threshold: 0.15,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const animateOnScroll = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('aos-animate');
-        }
-    });
-}, observerOptions);
-
-// Observe all elements with data-aos attribute
-document.querySelectorAll('[data-aos]').forEach(element => {
-    animateOnScroll.observe(element);
-});
+// Handled by the early inline reveal script in <head> so sections are not
+// held at opacity:0 waiting for this deferred file to run. See index.html.
 
 // ===== Back to Top Button =====
 const backToTopBtn = document.getElementById('backToTop');
