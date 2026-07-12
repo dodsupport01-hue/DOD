@@ -86,7 +86,7 @@ mongoose.connect(process.env.MONGODB_URI)
       // ── Keep-Alive Ping (prevents Render free tier from sleeping) ──────────
       // Pings itself every 14 minutes so the server never goes idle
       if (process.env.NODE_ENV === 'production') {
-        const SELF_URL = process.env.RENDER_EXTERNAL_URL || `https://api.dodsmarthealth.com`;
+        const SELF_URL = process.env.RENDER_EXTERNAL_URL || `https://dod-healthcare-api.onrender.com`;
         setInterval(() => {
           const https = require('https');
           const http = require('http');

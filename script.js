@@ -149,7 +149,7 @@ const CONTACT_API_BASE = (typeof window.BACKEND_URL === 'string' && window.BACKE
     ? window.BACKEND_URL + '/api'
     : (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
         ? 'http://localhost:5000/api'
-        : 'https://api.dodsmarthealth.com/api');
+        : 'https://dod-healthcare-api.onrender.com/api');
 
 if (contactForm) {
     contactForm.addEventListener('submit', async (e) => {

@@ -2764,7 +2764,7 @@
             </style>
             <script>
             (function(){
-                var API = (window.BACKEND_URL ? window.BACKEND_URL + '/api' : (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') ? 'http://localhost:5000/api' : 'https://api.dodsmarthealth.com/api'));
+                var API = (window.BACKEND_URL ? window.BACKEND_URL + '/api' : (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') ? 'http://localhost:5000/api' : 'https://dod-healthcare-api.onrender.com/api'));
 
                 var PLAY_ICON = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(99,102,241,0.55)"/><path d="M10 8l6 4-6 4z" fill="#fff"/></svg>';
                 var FS_ICON = '<svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"/></svg>';
@@ -4020,7 +4020,7 @@
                     (function(){
                         var API = window.BACKEND_URL ? window.BACKEND_URL + '/api'
                             : (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-                                ? 'http://localhost:5000/api' : 'https://api.dodsmarthealth.com/api');
+                                ? 'http://localhost:5000/api' : 'https://dod-healthcare-api.onrender.com/api');
                         var leadershipWrap = document.querySelector('.leadership-section');
                         fetch(API + '/team')
                             .then(function(r){ return r.json(); })
@@ -4695,7 +4695,7 @@
         <script>
             // ====== Backend API Configuration ======
             // const BACKEND_URL = 'https://dod-healthcare-api.onrender.com';
-            const BACKEND_URL = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1") ? "http://localhost:5000" : "https://api.dodsmarthealth.com";
+            const BACKEND_URL = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1") ? "http://localhost:5000" : "https://dod-healthcare-api.onrender.com";
 
             function esc(s) {
                 const d = document.createElement("div");
