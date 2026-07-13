@@ -1,0 +1,59 @@
+/* Self-hosted fonts — latin subset only.
+ *
+ * Previously loaded from fonts.googleapis.com, which cost two extra
+ * third-party round-trips (CSS from googleapis, then the .woff2 files from
+ * gstatic) before text could render. Serving them from our own domain removes
+ * both, and is the single biggest first-paint win on mobile.
+ *
+ * Inter ships as a VARIABLE font: one file covers weights 100-900, so the five
+ * weights we use cost one 47KB download instead of five identical ones.
+ *
+ * font-display: swap — text paints immediately in a fallback face and swaps
+ * when the webfont arrives, so a slow font can never block content.
+ */
+
+/* ---- Inter (variable: one file, every weight) ---- */
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url(fonts/inter-var.woff2) format("woff2");
+}
+
+/* ---- Poppins (only the weights the CSS actually uses) ---- */
+@font-face {
+    font-family: "Poppins";
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url(fonts/poppins-300.woff2) format("woff2");
+}
+@font-face {
+    font-family: "Poppins";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url(fonts/poppins-400.woff2) format("woff2");
+}
+@font-face {
+    font-family: "Poppins";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url(fonts/poppins-600.woff2) format("woff2");
+}
+@font-face {
+    font-family: "Poppins";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url(fonts/poppins-700.woff2) format("woff2");
+}
+@font-face {
+    font-family: "Poppins";
+    font-style: normal;
+    font-weight: 800;
+    font-display: swap;
+    src: url(fonts/poppins-800.woff2) format("woff2");
+}

@@ -547,22 +547,10 @@ console.log('%cWant to work with us? Contact: info@amazemedics.com', 'color: #10
 // ===== Initialize Everything =====
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Developed by https://webtroopsdevelopment.com/');
-    
-    // Add any additional initialization here
-    
-    // Preload critical resources
-    const preloadLinks = [
-        'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap',
-        'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
-    ];
-    
-    preloadLinks.forEach(href => {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'style';
-        link.href = href;
-        document.head.appendChild(link);
-    });
+
+    // Fonts used to be preloaded from Google here. They are self-hosted now
+    // (see fonts.css), so injecting those links only cost two pointless
+    // third-party requests for faces the page never uses.
 });
 
 // ===== Service Worker for PWA (Optional) =====

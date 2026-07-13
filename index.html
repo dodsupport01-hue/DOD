@@ -105,21 +105,27 @@
         <link rel="alternate" hreflang="x-default" href="https://dodsmarthealth.com/" />
 
         <!-- ================ PERFORMANCE: PRECONNECT / PRELOAD / DNS-PREFETCH ================ -->
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <!-- Fonts are self-hosted now (fonts.css), so the googleapis/gstatic
+             preconnects are gone, along with those two third-party round-trips.
+             Preload the two faces used above the fold — otherwise the browser
+             only discovers them after parsing the CSS, delaying text paint. -->
+        <link rel="preload" as="font" type="font/woff2" href="fonts/inter-var.woff2" crossorigin />
+        <link rel="preload" as="font" type="font/woff2" href="fonts/poppins-700.woff2" crossorigin />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.youtube.com" />
         <link rel="dns-prefetch" href="https://i.ytimg.com" />
-        <link rel="preload" as="image" href="logo.png" fetchpriority="high" />
-        <link rel="preload" as="image" href="image.jpeg" fetchpriority="high" />
-        <link rel="preload" as="style" href="styles.css" />
-        <link rel="preload" as="style" href="styles-additions.css" />
+        <!-- LCP image: preload the WebP the <picture> below will actually pick,
+             so the hero paints as early as possible and the JPEG fallback is
+             never downloaded. -->
+        <link rel="preload" as="image" href="image.webp" type="image/webp" fetchpriority="high" />
 
         <!-- ================ STYLES ================ -->
-        <link rel="stylesheet" href="styles.css" />
-        <link rel="stylesheet" href="styles-additions.css" />
-        <link rel="stylesheet" href="perf-mobile.css" />
+        <!-- One combined, minified stylesheet. This was three separate blocking
+             <link>s (styles.css + styles-additions.css + perf-mobile.css), costing
+             three round-trips before first paint. Edit the source .css files, then
+             rebuild this with:  node build-css.js -->
+        <link rel="stylesheet" href="styles.min.css" />
         <link rel="preconnect" href="https://dod-healthcare-api.onrender.com" crossorigin />
 
         <!-- Scroll-reveal (AOS) is wired up here, NOT in the deferred script.js.
@@ -168,13 +174,9 @@
                 }
             })();
         </script>
-        <link
-            href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"
-            rel="stylesheet"
-            media="print"
-            onload="this.media = 'all'"
-        />
-        <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" /></noscript>
+        <!-- Google Fonts <link>s removed: Poppins and Inter are now self-hosted
+             and declared in fonts.css, which is bundled into styles.min.css. -->
+
 
         <!-- ================ STRUCTURED DATA (JSON-LD)  -  Organization ================ -->
         <script type="application/ld+json">
@@ -634,15 +636,18 @@
                         <div class="pulse-circle"></div>
                         <div class="mockup-screen">
                             <div class="screen-content">
-                                <img
-                                    src="image.jpeg"
-                                    alt="DOD Health Kiosk touch-screen interface showing ECG, BP, vitals & video consultation - Made in India"
-                                    class="kiosk-screen-img"
-                                    width="800"
-                                    height="600"
-                                    fetchpriority="high"
-                                    decoding="async"
-                                />
+                                <picture>
+                                    <source srcset="image.webp" type="image/webp" />
+                                    <img
+                                        src="image-opt.jpg"
+                                        alt="DOD Health Kiosk touch-screen interface showing ECG, BP, vitals & video consultation - Made in India"
+                                        class="kiosk-screen-img"
+                                        width="900"
+                                        height="1200"
+                                        fetchpriority="high"
+                                        decoding="async"
+                                    />
+                                </picture>
                             </div>
                         </div>
                         <div class="mockup-stand"></div>
