@@ -1,0 +1,52 @@
+name: Deploy to Hostinger VPS
+
+# Auto-deploy on every push to main — the Vercel behaviour you're replacing.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # lets you trigger a deploy by hand from the Actions tab
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Load SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Trust the VPS host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync site to VPS
+        # --delete keeps the server identical to the repo (removes stale files).
+        # Everything not needed to SERVE the site is excluded — the backend runs
+        # as its own service, and .git/deploy/CI files must never be public.
+        run: |
+          rsync -avz --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.claude' \
+            --exclude 'backend' \
+            --exclude 'deploy' \
+            --exclude 'node_modules' \
+            --exclude 'package*.json' \
+            --exclude 'render.yaml' \
+            --exclude 'vercel.json' \
+            --exclude 'netlify.toml' \
+            --exclude 'README.md' \
+            ./ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/dod/"
+
+      - name: Reload nginx
+        run: |
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "sudo nginx -t && sudo systemctl reload nginx"
