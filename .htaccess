@@ -14,9 +14,24 @@
   RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
   RewriteRule ^(.*)$ https://%1/$1 [L,R=301]
 
-  # Remove trailing index.html (canonicalize)
+  # Remove trailing index.html (canonicalize) — but never for /admin/index.html,
+  # which is a real page users land on.
   RewriteCond %{THE_REQUEST} \s/+(.*?)index\.html[\s?] [NC]
+  RewriteCond %{REQUEST_URI} !^/admin/
   RewriteRule ^ /%1 [R=301,L]
+
+  # ───────── Pretty SEO URLs (were in vercel.json) ─────────
+  RewriteRule ^features/?$ /#features     [L,R=301]
+  RewriteRule ^contact/?$  /#contact      [L,R=301]
+  RewriteRule ^gallery/?$  /#gallery-view [L,R=301]
+  RewriteRule ^about/?$    /#about        [L,R=301]
+  RewriteRule ^videos/?$   /#videos       [L,R=301]
+
+  # ───────── Admin panel: serve it, don't redirect ─────────
+  RewriteRule ^admin/?$ /admin/index.html [L]
+
+  # ───────── .well-known/security.txt ─────────
+  RewriteRule ^\.well-known/security\.txt$ /security.txt [L]
 </IfModule>
 
 # ───────── GZIP / DEFLATE COMPRESSION ─────────
@@ -54,10 +69,12 @@
   ExpiresByType image/x-icon                  "access plus 1 month"
   ExpiresByType image/vnd.microsoft.icon      "access plus 1 month"
 
-  # CSS / JS (1 year - bust via filename hash)
-  ExpiresByType text/css                      "access plus 1 year"
-  ExpiresByType text/javascript               "access plus 1 year"
-  ExpiresByType application/javascript        "access plus 1 year"
+  # CSS / JS — 1 day. These filenames are NOT content-hashed, so a long
+  # expiry would strand users on stale assets. Must agree with the
+  # Cache-Control rule below.
+  ExpiresByType text/css                      "access plus 1 day"
+  ExpiresByType text/javascript               "access plus 1 day"
+  ExpiresByType application/javascript        "access plus 1 day"
 
   # Images (1 year)
   ExpiresByType image/png                     "access plus 1 year"
@@ -82,9 +99,18 @@
 
 # ───────── CACHE-CONTROL HEADERS ─────────
 <IfModule mod_headers.c>
-  # Long cache for hashed assets
-  <FilesMatch "\.(css|js|jpg|jpeg|png|gif|webp|avif|svg|woff|woff2|ttf|otf|eot|ico)$">
+  # Images / fonts: safe to cache forever — the bytes behind these names
+  # don't change in practice.
+  <FilesMatch "\.(jpg|jpeg|png|gif|webp|avif|svg|woff|woff2|ttf|otf|eot|ico)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # CSS / JS: these filenames are NOT content-hashed (styles.css, script.js),
+  # so they must NEVER be immutable — a returning visitor would be pinned to a
+  # stale copy for a year and would never receive a fix. Cache for a day, then
+  # revalidate.
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=86400, must-revalidate"
   </FilesMatch>
 
   # No cache for HTML
@@ -123,7 +149,13 @@
 </IfModule>
 
 # ───────── CUSTOM ERROR PAGES ─────────
-ErrorDocument 404 /index.html
+# Deliberately NOT "ErrorDocument 404 /index.html": that serves the homepage
+# with a 200-looking body for every bad URL, which masks real 404s and makes
+# search engines index junk paths. Let Apache return a genuine 404.
+#
+# To add a styled 404 page later, create 404.html and point this at it — the
+# status code stays 404, which is what matters:
+#   ErrorDocument 404 /404.html
 
 # ───────── SECURITY: block sensitive files ─────────
 <FilesMatch "(^\.|\.(bak|config|sql|fla|psd|ini|log|sh|inc|swp|dist|env)$|^#.*#$|\.~$)">
