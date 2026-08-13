@@ -55,6 +55,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
         Local Videos
       </a>
+      <a class="nav-item" data-page="reviews" onclick="showPage('reviews')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Customer Reviews
+      </a>
       <a class="nav-item" data-page="media" onclick="showPage('media')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>
         Media / News
@@ -166,6 +170,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Add Video
             </button>
+            <button class="btn btn-outline" onclick="showPage('reviews');setTimeout(()=>openReviewModal(),300)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Customer Review
+            </button>
             <button class="btn btn-outline" onclick="showPage('media');setTimeout(()=>openMediaModal(),300)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Add Media Article
@@ -180,10 +188,11 @@
         <div class="panel">
           <div class="panel-header"><h2>How It Works</h2></div>
           <div class="panel-body" style="color:var(--text-muted);font-size:0.875rem;line-height:2;">
-            <p>🤝 &nbsp;<strong style="color:var(--text)">Brand Partners</strong> — logos appear in the scrolling marquee on the website.</p>
+            <p>🤝 &nbsp;<strong style="color:var(--text)">Brand Partners</strong> — logos appear in the "Brands &amp; Collaborations" grid on the website.</p>
             <p>🏆 &nbsp;<strong style="color:var(--text)">Certifications</strong> — shown in the Certifications &amp; Recognitions section.</p>
             <p>🖼️ &nbsp;<strong style="color:var(--text)">Gallery</strong> — images stored on Cloudinary CDN, shown in the DOD Gallery section.</p>
             <p>🎬 &nbsp;<strong style="color:var(--text)">Videos</strong> — YouTube embeds shown in the "DOD Kiosk in Action" section.</p>
+            <p>⭐ &nbsp;<strong style="color:var(--text)">Customer Reviews</strong> — video reviews shown in the "What People Say After Using the Kiosk" collage.</p>
             <p>📰 &nbsp;<strong style="color:var(--text)">Media / News</strong> — articles shown in "DOD in the Media" section.</p>
             <p>👥 &nbsp;<strong style="color:var(--text)">Team</strong> — team members shown in the "Our Team" section with photo, name, and designation.</p>
           </div>
@@ -290,6 +299,27 @@
             <div id="localVideosEmpty" class="empty-state" style="display:none;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
               <p>No local videos yet. Upload your first video to get started.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CUSTOMER REVIEWS ── -->
+      <div id="page-reviews" style="display:none;">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>⭐ Customer Video Reviews</h2>
+            <button class="btn btn-primary" onclick="openReviewModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Upload Review
+            </button>
+          </div>
+          <div class="panel-body">
+            <div id="reviewsLoading" class="loading"><div class="spinner"></div>Loading reviews...</div>
+            <div id="reviewsGrid" class="items-grid" style="display:none;"></div>
+            <div id="reviewsEmpty" class="empty-state" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <p>No customer reviews yet. Upload your first review video to get started.</p>
             </div>
           </div>
         </div>
@@ -601,6 +631,69 @@
   </div>
 </div>
 
+<!-- ╔══════════ CUSTOMER REVIEW MODAL ══════════╗ -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="reviewModalTitle">Upload Customer Review</h3>
+      <button class="modal-close" onclick="closeReviewModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div id="reviewModalAlert" class="alert" style="display:none;"></div>
+      <input type="hidden" id="reviewEditId" />
+      <div><label class="form-label">Customer Name *</label><input type="text" class="form-input" id="reviewName" placeholder="e.g. Sunita Devi" /></div>
+      <div><label class="form-label">Location</label><input type="text" class="form-input" id="reviewLocation" placeholder="e.g. Lucknow, Uttar Pradesh" /></div>
+      <div>
+        <label class="form-label">Rating</label>
+        <select class="form-select" id="reviewRating">
+          <option value="5">★★★★★ (5)</option>
+          <option value="4">★★★★☆ (4)</option>
+          <option value="3">★★★☆☆ (3)</option>
+          <option value="2">★★☆☆☆ (2)</option>
+          <option value="1">★☆☆☆☆ (1)</option>
+        </select>
+      </div>
+      <div><label class="form-label">Written Quote</label><textarea class="form-textarea" id="reviewQuote" placeholder="Short line shown under the video, e.g. 'Got my full checkup in 5 minutes.'"></textarea></div>
+      <div>
+        <label class="form-label">Review Video * <span id="reviewFileNote" style="font-weight:400;color:#64748b;">(MP4 / MOV / WebM, max 200 MB)</span></label>
+        <div class="upload-area" id="reviewUploadArea" onclick="document.getElementById('reviewFile').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:36px;height:36px;color:#6366f1;margin-bottom:0.5rem;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p id="reviewFileName" style="font-size:0.875rem;color:#64748b;">Click to select the review video</p>
+        </div>
+        <input type="file" id="reviewFile" accept="video/mp4,video/quicktime,video/webm,video/avi" style="display:none;" onchange="onReviewFileChange(this)" />
+        <div id="reviewUploadProgress" style="display:none;margin-top:0.75rem;">
+          <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+            <div id="reviewProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#6366f1,#0ea5e9);transition:width 0.3s;border-radius:3px;"></div>
+          </div>
+          <p id="reviewProgressText" style="font-size:0.75rem;color:#64748b;margin-top:0.3rem;">Uploading...</p>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Cover Image <span style="font-weight:400;color:#64748b;">(optional — the still shown before the video plays)</span></label>
+        <div class="upload-area" id="reviewPosterArea" onclick="document.getElementById('reviewPoster').click()">
+          <p id="reviewPosterName" style="font-size:0.875rem;color:#64748b;">Click to select a cover image (JPG / PNG / WebP)</p>
+        </div>
+        <input type="file" id="reviewPoster" accept="image/*" style="display:none;" onchange="onReviewPosterChange(this)" />
+      </div>
+      <div><label class="form-label">Display Order</label><input type="number" class="form-input" id="reviewOrder" placeholder="0" min="0" /></div>
+      <div>
+        <label class="form-label">Status</label>
+        <select class="form-select" id="reviewActive">
+          <option value="true">Active (visible on website)</option>
+          <option value="false">Inactive (hidden)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeReviewModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveReviewBtn" onclick="saveReview()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Review
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ╔══════════ MEDIA MODAL ══════════╗ -->
 <div class="modal-overlay" id="mediaModal">
   <div class="modal">
@@ -726,6 +819,7 @@ const pages = {
   gallery: 'Gallery',
   videos: 'Videos',
   localVideos: 'Local Videos',
+  reviews: 'Customer Reviews',
   media: 'Media / News',
   team: 'Team Members',
   messages: 'Contact Messages',
@@ -733,11 +827,12 @@ const pages = {
 };
 const subtitles = {
   dashboard: 'Welcome back! Manage your website content.',
-  brands: 'Manage the scrolling brand logo marquee.',
+  brands: 'Manage the logos in the "Brands & Collaborations" grid.',
   certifications: 'Manage Certifications & Recognitions section.',
   gallery: 'Upload and manage DOD Health Kiosk Gallery photos.',
   videos: 'Manage YouTube videos shown in "DOD Kiosk in Action".',
   localVideos: 'Upload and manage local MP4 videos shown in the DOD Kiosk Showcase section.',
+  reviews: 'Upload customer video reviews shown in the "What People Say" collage.',
   media: 'Manage press and media coverage articles.',
   team: 'Manage the team members shown on the website.',
   messages: 'Enquiries submitted through the website "Send Us a Message" form.',
@@ -759,6 +854,7 @@ function showPage(name) {
   if (name === 'gallery') loadGallery();
   if (name === 'videos') loadVideos();
   if (name === 'localVideos') loadLocalVideos();
+  if (name === 'reviews') loadReviews();
   if (name === 'media') loadMedia();
   if (name === 'team') loadTeam();
   if (name === 'messages') loadMessages();
@@ -1253,6 +1349,138 @@ async function saveLocalVideo() {
 async function deleteLocalVideo(id, title) {
   if (!confirm(`Delete video "${title}"? This will also remove it from Cloudinary.`)) return;
   try { await apiCall(`/local-videos/${id}`, 'DELETE'); toast(`"${title}" deleted.`, 'info'); loadLocalVideos(); }
+  catch (err) { toast('Delete failed: ' + err.message, 'error'); }
+}
+
+// ═══════════════════ CUSTOMER REVIEWS ════════════════════════════════════════
+let reviews = [];
+
+function onReviewFileChange(input) {
+  const file = input.files[0];
+  document.getElementById('reviewFileName').textContent = file ? file.name : 'Click to select the review video';
+}
+function onReviewPosterChange(input) {
+  const file = input.files[0];
+  document.getElementById('reviewPosterName').textContent = file ? file.name : 'Click to select a cover image (JPG / PNG / WebP)';
+}
+
+async function loadReviews() {
+  document.getElementById('reviewsLoading').style.display = '';
+  document.getElementById('reviewsGrid').style.display = 'none';
+  document.getElementById('reviewsEmpty').style.display = 'none';
+  try {
+    const data = await apiCall('/reviews/all');
+    reviews = data.data;
+    renderReviews();
+  } catch (err) { toast('Failed to load reviews: ' + err.message, 'error'); }
+  finally { document.getElementById('reviewsLoading').style.display = 'none'; }
+}
+
+function renderReviews() {
+  const grid = document.getElementById('reviewsGrid');
+  const empty = document.getElementById('reviewsEmpty');
+  if (!reviews.length) { empty.style.display = ''; grid.style.display = 'none'; return; }
+  grid.innerHTML = reviews.map(r => {
+    const stars = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+    return `
+    <div class="item-card">
+      <div class="item-img" style="background:#0f172a;display:flex;align-items:center;justify-content:center;">
+        <video src="${escHtml(r.videoUrl)}" ${r.thumbnailUrl ? `poster="${escHtml(r.thumbnailUrl)}"` : ''} style="width:100%;height:100%;object-fit:cover;" preload="none"></video>
+      </div>
+      <div class="item-info">
+        <div class="item-name">${escHtml(r.customerName)}${!r.isActive ? '<span class="item-badge-inactive">Hidden</span>' : ''}</div>
+        <div class="item-desc" style="color:#f59e0b;">${stars}</div>
+        ${r.location ? `<div class="item-desc">${escHtml(r.location)}</div>` : ''}
+        ${r.quote ? `<div class="item-desc">"${escHtml(r.quote)}"</div>` : ''}
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-outline" onclick="editReview('${r._id}')">✏️ Edit</button>
+        <button class="btn btn-danger" onclick="deleteReview('${r._id}','${escHtml(r.customerName)}')">🗑️ Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+  grid.style.display = 'grid';
+}
+
+function openReviewModal(rev = null) {
+  document.getElementById('reviewEditId').value = rev ? rev._id : '';
+  document.getElementById('reviewModalTitle').textContent = rev ? 'Edit Customer Review' : 'Upload Customer Review';
+  document.getElementById('reviewName').value = rev ? rev.customerName : '';
+  document.getElementById('reviewLocation').value = rev ? (rev.location || '') : '';
+  document.getElementById('reviewRating').value = rev ? String(rev.rating || 5) : '5';
+  document.getElementById('reviewQuote').value = rev ? (rev.quote || '') : '';
+  document.getElementById('reviewOrder').value = rev ? rev.order : 0;
+  document.getElementById('reviewActive').value = rev ? String(rev.isActive) : 'true';
+  document.getElementById('reviewFile').value = '';
+  document.getElementById('reviewPoster').value = '';
+  document.getElementById('reviewFileName').textContent = 'Click to select the review video';
+  document.getElementById('reviewPosterName').textContent = 'Click to select a cover image (JPG / PNG / WebP)';
+  document.getElementById('reviewFileNote').textContent = rev ? '(Leave blank to keep the existing video)' : '(MP4 / MOV / WebM, max 200 MB)';
+  document.getElementById('reviewModalAlert').style.display = 'none';
+  document.getElementById('reviewUploadProgress').style.display = 'none';
+  document.getElementById('reviewModal').classList.add('open');
+}
+function closeReviewModal() { document.getElementById('reviewModal').classList.remove('open'); }
+function editReview(id) { const r = reviews.find(x => x._id === id); if (r) openReviewModal(r); }
+
+async function saveReview() {
+  const id = document.getElementById('reviewEditId').value;
+  const name = document.getElementById('reviewName').value.trim();
+  if (!name) { showModalAlert('reviewModalAlert', 'Customer name is required.'); return; }
+
+  const videoInput = document.getElementById('reviewFile');
+  const posterInput = document.getElementById('reviewPoster');
+  if (!id && !videoInput.files[0]) { showModalAlert('reviewModalAlert', 'Please select a review video.'); return; }
+
+  const btn = document.getElementById('saveReviewBtn');
+  btn.disabled = true; btn.textContent = 'Uploading...';
+
+  const fd = new FormData();
+  fd.append('customerName', name);
+  fd.append('location', document.getElementById('reviewLocation').value);
+  fd.append('rating', document.getElementById('reviewRating').value);
+  fd.append('quote', document.getElementById('reviewQuote').value);
+  fd.append('order', document.getElementById('reviewOrder').value || 0);
+  fd.append('isActive', document.getElementById('reviewActive').value);
+  if (videoInput.files[0]) fd.append('video', videoInput.files[0]);
+  if (posterInput.files[0]) fd.append('poster', posterInput.files[0]);
+
+  // Video uploads take a while — creep a progress bar to 88% so the admin can
+  // see the request is alive, then snap to 100% when the server answers.
+  let prog = null;
+  if (videoInput.files[0]) {
+    document.getElementById('reviewUploadProgress').style.display = '';
+    document.getElementById('reviewProgressBar').style.width = '0%';
+    document.getElementById('reviewProgressText').textContent = 'Uploading video...';
+    let pct = 0;
+    prog = setInterval(() => {
+      pct = Math.min(pct + 4, 88);
+      document.getElementById('reviewProgressBar').style.width = pct + '%';
+    }, 400);
+  }
+
+  try {
+    if (id) await apiCall(`/reviews/${id}`, 'PUT', fd, true);
+    else    await apiCall('/reviews', 'POST', fd, true);
+    if (prog) {
+      clearInterval(prog);
+      document.getElementById('reviewProgressBar').style.width = '100%';
+      document.getElementById('reviewProgressText').textContent = 'Upload complete!';
+    }
+    toast(id ? 'Review updated ✅' : 'Review uploaded ✅');
+    setTimeout(() => { closeReviewModal(); loadReviews(); }, prog ? 600 : 0);
+  } catch (err) {
+    if (prog) clearInterval(prog);
+    document.getElementById('reviewUploadProgress').style.display = 'none';
+    showModalAlert('reviewModalAlert', err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Review';
+  }
+}
+
+async function deleteReview(id, name) {
+  if (!confirm(`Delete the review by "${name}"? The video will also be removed from ImageKit.`)) return;
+  try { await apiCall(`/reviews/${id}`, 'DELETE'); toast(`Review by "${name}" deleted.`, 'info'); loadReviews(); }
   catch (err) { toast('Delete failed: ' + err.message, 'error'); }
 }
 

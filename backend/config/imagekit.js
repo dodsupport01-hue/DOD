@@ -31,6 +31,8 @@ const memoryStorage = multer.memoryStorage();
 
 const IMAGE_FORMATS = /\.(jpe?g|png|gif|svg|webp)$/i;
 const VIDEO_FORMATS = /\.(mp4|mov|webm|avi)$/i;
+// Customer reviews send a video plus an optional poster image in one request.
+const MEDIA_FORMATS = /\.(mp4|mov|webm|avi|jpe?g|png|webp)$/i;
 
 function makeUploader({ formats, fileSize }) {
   return multer({
@@ -49,6 +51,7 @@ const uploadCert    = makeUploader({ formats: IMAGE_FORMATS, fileSize: 5 * 1024 
 const uploadGallery = makeUploader({ formats: IMAGE_FORMATS, fileSize: 10 * 1024 * 1024 });
 const uploadTeam    = makeUploader({ formats: IMAGE_FORMATS, fileSize: 5 * 1024 * 1024 });
 const uploadVideo   = makeUploader({ formats: VIDEO_FORMATS, fileSize: 200 * 1024 * 1024 });
+const uploadReview  = makeUploader({ formats: MEDIA_FORMATS, fileSize: 200 * 1024 * 1024 });
 
 /**
  * Upload an in-memory file (from multer memoryStorage) to ImageKit.
@@ -87,6 +90,7 @@ module.exports = {
   uploadGallery,
   uploadTeam,
   uploadVideo,
+  uploadReview,
   uploadToImageKit,
   deleteFromImageKit,
 };

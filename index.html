@@ -499,6 +499,7 @@
                     <li><a href="#howto" class="nav-link">Steps</a></li>
                     <li><a href="#brands" class="nav-link">Partners</a></li>
                     <li><a href="#gallery-view" class="nav-link">Gallery</a></li>
+                    <li><a href="#reviews" class="nav-link">Reviews</a></li>
                     <li><a href="#videos" class="nav-link">Videos</a></li>
                     <li><a href="#about" class="nav-link">About</a></li>
                     <li><a href="#contact" class="nav-link">Contact</a></li>
@@ -3027,6 +3028,438 @@
                         if (s) s.style.display = 'none';
                     });
             })();
+            </script>
+        </section>
+
+        <!-- === CUSTOMER VIDEO REVIEWS === -->
+        <section class="cr-section" id="reviews">
+            <style>
+                .cr-section {
+                    background: #fff;
+                }
+                .cr-inner {
+                    max-width: 1120px;
+                    margin: 0 auto;
+                    padding: 0 1.5rem;
+                    box-sizing: border-box;
+                }
+                .cr-header {
+                    text-align: center;
+                    max-width: 620px;
+                    margin: 0 auto 2.5rem;
+                }
+                .cr-eyebrow {
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    letter-spacing: 0.22em;
+                    text-transform: uppercase;
+                    color: #0ea5e9;
+                    display: block;
+                    margin-bottom: 0.75rem;
+                }
+                .cr-headline {
+                    font-size: clamp(1.85rem, 4vw, 2.75rem);
+                    font-weight: 800;
+                    letter-spacing: -0.02em;
+                    color: #0d1117;
+                    line-height: 1.15;
+                    margin-bottom: 0.75rem;
+                }
+                .cr-headline em {
+                    font-style: italic;
+                    font-weight: 300;
+                    color: #6366f1;
+                }
+                .cr-sub {
+                    font-size: 0.98rem;
+                    color: #6b7280;
+                    line-height: 1.6;
+                    margin: 0;
+                }
+
+                /* Collage: one large feature tile, the rest a mosaic around it */
+                .cr-collage {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 10px;
+                }
+                .cr-tile {
+                    position: relative;
+                    aspect-ratio: 3 / 4;
+                    margin: 0;
+                    border-radius: 14px;
+                    overflow: hidden;
+                    background: #0f172a;
+                    cursor: pointer;
+                }
+                .cr-tile--feature {
+                    /* A 2x2 span of 3/4 tiles is itself ~3/4, so keeping the
+                       ratio makes the feature tile self-sizing — it still has a
+                       height when it is the only review in the collage. */
+                    grid-column: span 2;
+                    grid-row: span 2;
+                }
+                .cr-tile video {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                }
+                .cr-tile::after {
+                    /* readability scrim behind the caption */
+                    content: "";
+                    position: absolute;
+                    inset: auto 0 0 0;
+                    height: 55%;
+                    background: linear-gradient(to top, rgba(2, 6, 23, 0.85), transparent);
+                    pointer-events: none;
+                }
+                .cr-play {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 54px;
+                    height: 54px;
+                    border-radius: 50%;
+                    background: rgba(15, 23, 42, 0.55);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    pointer-events: none;
+                    z-index: 2;
+                }
+                .cr-play svg {
+                    width: 22px;
+                    height: 22px;
+                    fill: #fff;
+                    margin-left: 3px;
+                }
+                .cr-cap {
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    z-index: 2;
+                    padding: 0.85rem 0.9rem;
+                    color: #fff;
+                    text-align: left;
+                }
+                .cr-stars {
+                    display: block;
+                    font-size: 0.78rem;
+                    letter-spacing: 0.08em;
+                    color: #fbbf24;
+                    margin-bottom: 0.2rem;
+                }
+                .cr-name {
+                    display: block;
+                    font-size: 0.92rem;
+                    font-weight: 700;
+                    line-height: 1.3;
+                }
+                .cr-loc {
+                    display: block;
+                    font-size: 0.75rem;
+                    color: #cbd5e1;
+                    margin-top: 0.1rem;
+                }
+
+                /* Lightbox player */
+                .cr-lb {
+                    display: none;
+                    position: fixed;
+                    inset: 0;
+                    z-index: 10000;
+                    background: rgba(2, 6, 23, 0.95);
+                    align-items: center;
+                    justify-content: center;
+                    padding: 1.5rem;
+                }
+                .cr-lb.open {
+                    display: flex;
+                }
+                .cr-lb-box {
+                    max-width: 460px;
+                    width: 100%;
+                    text-align: center;
+                }
+                .cr-lb-box video {
+                    width: 100%;
+                    max-height: 72vh;
+                    border-radius: 14px;
+                    background: #000;
+                    display: block;
+                }
+                .cr-lb-meta {
+                    margin-top: 0.85rem;
+                    color: #e2e8f0;
+                }
+                .cr-lb-meta strong {
+                    display: block;
+                    font-size: 1rem;
+                }
+                .cr-lb-meta span {
+                    display: block;
+                    font-size: 0.82rem;
+                    color: #94a3b8;
+                    margin-top: 0.15rem;
+                }
+                .cr-lb-meta p {
+                    font-size: 0.88rem;
+                    color: #cbd5e1;
+                    line-height: 1.6;
+                    margin: 0.6rem 0 0;
+                    font-style: italic;
+                }
+                .cr-lb-close {
+                    position: absolute;
+                    top: 1.25rem;
+                    right: 1.5rem;
+                    width: 40px;
+                    height: 40px;
+                    border: none;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.12);
+                    color: #fff;
+                    font-size: 1.4rem;
+                    line-height: 1;
+                    cursor: pointer;
+                }
+                .cr-lb-nav {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 44px;
+                    height: 44px;
+                    border: none;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.12);
+                    color: #fff;
+                    font-size: 1.4rem;
+                    cursor: pointer;
+                }
+                .cr-lb-prev {
+                    left: 1.25rem;
+                }
+                .cr-lb-next {
+                    right: 1.25rem;
+                }
+                .cr-lb-close:hover,
+                .cr-lb-nav:hover {
+                    background: rgba(255, 255, 255, 0.25);
+                }
+
+                .cr-skeleton {
+                    aspect-ratio: 3 / 4;
+                    border-radius: 14px;
+                    background: #eef2f7;
+                }
+
+                @media (max-width: 900px) {
+                    .cr-collage {
+                        grid-template-columns: repeat(3, 1fr);
+                    }
+                }
+                @media (max-width: 640px) {
+                    .cr-collage {
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 8px;
+                    }
+                    .cr-tile--feature {
+                        /* full-width banner tile on phones, pairs below it */
+                        grid-row: span 1;
+                        aspect-ratio: 4 / 3;
+                    }
+                    .cr-lb-nav {
+                        width: 38px;
+                        height: 38px;
+                    }
+                    .cr-lb-prev {
+                        left: 0.5rem;
+                    }
+                    .cr-lb-next {
+                        right: 0.5rem;
+                    }
+                }
+            </style>
+
+            <div class="cr-inner">
+                <div class="cr-header">
+                    <span class="cr-eyebrow">Real Voices</span>
+                    <h2 class="cr-headline">What People Say After <em>Using the Kiosk</em></h2>
+                    <p class="cr-sub">Short video reviews recorded by people who took a health checkup at a DOD kiosk.</p>
+                </div>
+
+                <div class="cr-collage" id="reviewsCollage">
+                    <div class="cr-skeleton"></div>
+                    <div class="cr-skeleton"></div>
+                    <div class="cr-skeleton"></div>
+                    <div class="cr-skeleton"></div>
+                </div>
+            </div>
+
+            <!-- Lightbox player, shared by every tile -->
+            <div class="cr-lb" id="crLb" onclick="if(event.target===this)crCloseLb()">
+                <button class="cr-lb-close" onclick="crCloseLb()" aria-label="Close">&times;</button>
+                <button class="cr-lb-nav cr-lb-prev" onclick="crNavLb(-1)" aria-label="Previous review">&#8249;</button>
+                <div class="cr-lb-box">
+                    <video id="crLbVideo" controls playsinline preload="metadata"></video>
+                    <div class="cr-lb-meta">
+                        <strong id="crLbName"></strong>
+                        <span id="crLbLoc"></span>
+                        <p id="crLbQuote"></p>
+                    </div>
+                </div>
+                <button class="cr-lb-nav cr-lb-next" onclick="crNavLb(1)" aria-label="Next review">&#8250;</button>
+            </div>
+
+            <script>
+                (function () {
+                    var API = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1") ? "http://localhost:5000/api" : "https://dod-healthcare-api.onrender.com/api";
+
+                    var PLAY_ICON = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+                    var reviews = [];
+                    var cur = 0;
+
+                    function esc(s) {
+                        var d = document.createElement("div");
+                        d.textContent = String(s == null ? "" : s);
+                        // textContent->innerHTML leaves quotes alone, and these
+                        // values land inside double-quoted attributes.
+                        return d.innerHTML.replace(/"/g, "&quot;");
+                    }
+                    function stars(n) {
+                        var r = Math.max(1, Math.min(5, parseInt(n, 10) || 5));
+                        return "★".repeat(r) + "☆".repeat(5 - r);
+                    }
+
+                    window.crOpenLb = function (i) {
+                        cur = i;
+                        crShowLb();
+                    };
+                    window.crCloseLb = function () {
+                        var v = document.getElementById("crLbVideo");
+                        v.pause();
+                        v.removeAttribute("src");
+                        v.load();
+                        document.getElementById("crLb").classList.remove("open");
+                    };
+                    window.crNavLb = function (dir) {
+                        if (!reviews.length) return;
+                        cur = (cur + dir + reviews.length) % reviews.length;
+                        crShowLb();
+                    };
+                    function crShowLb() {
+                        var r = reviews[cur];
+                        if (!r) return;
+                        var v = document.getElementById("crLbVideo");
+                        v.src = r.videoUrl;
+                        if (r.thumbnailUrl) v.poster = r.thumbnailUrl;
+                        else v.removeAttribute("poster");
+                        document.getElementById("crLbName").textContent = r.customerName || "";
+                        document.getElementById("crLbLoc").textContent = r.location || "";
+                        var q = document.getElementById("crLbQuote");
+                        q.textContent = r.quote ? '"' + r.quote + '"' : "";
+                        q.style.display = r.quote ? "" : "none";
+                        document.getElementById("crLb").classList.add("open");
+                        var p = v.play();
+                        if (p && p.catch) p.catch(function () {});
+                    }
+                    document.addEventListener("keydown", function (e) {
+                        var lb = document.getElementById("crLb");
+                        if (!lb || !lb.classList.contains("open")) return;
+                        if (e.key === "Escape") crCloseLb();
+                        if (e.key === "ArrowLeft") crNavLb(-1);
+                        if (e.key === "ArrowRight") crNavLb(1);
+                    });
+
+                    function hideSection() {
+                        var s = document.getElementById("reviews");
+                        if (s) s.style.display = "none";
+                    }
+
+                    fetch(API + "/reviews")
+                        .then(function (r) {
+                            return r.json();
+                        })
+                        .then(function (resp) {
+                            if (!resp.success || !resp.data || !resp.data.length) return hideSection();
+                            reviews = resp.data;
+
+                            var grid = document.getElementById("reviewsCollage");
+                            grid.innerHTML = reviews
+                                .map(function (r, i) {
+                                    return (
+                                        '<figure class="cr-tile' +
+                                        (i === 0 ? " cr-tile--feature" : "") +
+                                        '" onclick="crOpenLb(' +
+                                        i +
+                                        ')" tabindex="0" role="button" aria-label="Play review by ' +
+                                        esc(r.customerName) +
+                                        '">' +
+                                        '<video muted playsinline preload="none"' +
+                                        (r.thumbnailUrl ? ' poster="' + esc(r.thumbnailUrl) + '"' : "") +
+                                        ' data-src="' +
+                                        esc(r.videoUrl) +
+                                        '"></video>' +
+                                        '<span class="cr-play">' +
+                                        PLAY_ICON +
+                                        "</span>" +
+                                        '<figcaption class="cr-cap">' +
+                                        '<span class="cr-stars">' +
+                                        stars(r.rating) +
+                                        "</span>" +
+                                        '<span class="cr-name">' +
+                                        esc(r.customerName) +
+                                        "</span>" +
+                                        (r.location ? '<span class="cr-loc">' + esc(r.location) + "</span>" : "") +
+                                        "</figcaption>" +
+                                        "</figure>"
+                                    );
+                                })
+                                .join("");
+
+                            // Tiles show a still frame, not a full download: the source is
+                            // attached only when the tile nears the viewport, and only
+                            // metadata is fetched unless a poster image was uploaded.
+                            var tiles = grid.querySelectorAll(".cr-tile video");
+                            function armTile(video) {
+                                if (!video.dataset.src) return;
+                                if (!video.getAttribute("poster")) video.preload = "metadata";
+                                video.src = video.dataset.src;
+                                delete video.dataset.src;
+                            }
+                            if ("IntersectionObserver" in window) {
+                                var io = new IntersectionObserver(
+                                    function (entries, obs) {
+                                        entries.forEach(function (en) {
+                                            if (!en.isIntersecting) return;
+                                            armTile(en.target);
+                                            obs.unobserve(en.target);
+                                        });
+                                    },
+                                    { rootMargin: "300px" },
+                                );
+                                tiles.forEach(function (v) {
+                                    io.observe(v);
+                                });
+                            } else {
+                                tiles.forEach(armTile);
+                            }
+
+                            // Keyboard: Enter/Space opens the same lightbox as a click.
+                            grid.querySelectorAll(".cr-tile").forEach(function (tile, i) {
+                                tile.addEventListener("keydown", function (e) {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        crOpenLb(i);
+                                    }
+                                });
+                            });
+                        })
+                        .catch(hideSection);
+                })();
             </script>
         </section>
 
