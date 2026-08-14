@@ -55,7 +55,7 @@
         <meta property="og:title" content="DOD Digital Health Kiosk" />
         <meta
             property="og:description"
-            content="DOD Digital Health Kiosk - The #1 Health Kiosk Manufacturer in Noida & Delhi NCR. AI-powered ECG, BP, Sugar, Vision, PFT & Live Video Consultation. Serving Noida, Greater Noida, Ghaziabad, Gurugram. Made in India."
+            content="DOD Digital Health Kiosk - The #1 Health Kiosk. AI-powered ECG, BP, Sugar, Vision, PFT & Live Video Consultation. Serving Noida, Greater Noida, Ghaziabad, Gurugram. Made in India."
         />
         <meta property="og:url" content="https://dodsmarthealth.com/" />
         <meta property="og:image" content="https://dodsmarthealth.com/kiosk-screen.png" />
@@ -71,7 +71,7 @@
         <meta name="twitter:site" content="@Amazemedics" />
         <meta name="twitter:creator" content="@Amazemedics" />
         <meta name="twitter:title" content="DOD Digital Health Kiosk" />
-        <meta name="twitter:description" content="DOD Digital Health Kiosk - The #1 Health Kiosk Manufacturer in Noida & Delhi NCR. AI-powered ECG, BP, Sugar, Vision, PFT & Live Video Consultation. Serving Noida, Greater Noida, Ghaziabad, Gurugram. Made in India." />
+        <meta name="twitter:description" content="DOD Digital Health Kiosk - The #1 Health Kiosk. AI-powered ECG, BP, Sugar, Vision, PFT & Live Video Consultation. Serving Noida, Greater Noida, Ghaziabad, Gurugram. Made in India." />
         <meta name="twitter:image" content="https://dodsmarthealth.com/kiosk-screen.png" />
         <meta name="twitter:image:alt" content="DOD Digital Health Kiosk" />
 
@@ -4081,6 +4081,10 @@
                 .pr-map {
                     position: relative;
                     width: 100%;
+                    /* India is taller than it is wide, so an unconstrained map
+                       would tower over the copy beside it */
+                    max-width: 620px;
+                    margin: 0 auto;
                 }
                 .pr-map-img {
                     display: block;
@@ -4307,7 +4311,7 @@
                     <div class="pr-map">
                         <img
                             class="pr-map-img"
-                            src="img/india-map.png"
+                            src="img/india-map.svg"
                             alt="Map of India showing DOD Smart Health Kiosk locations"
                             loading="lazy"
                             decoding="async"
@@ -4319,14 +4323,16 @@
 
                 <!-- Edit this list to change the map. data-x / data-y are the pin
                      position in % of the map image, data-side is which way the
-                     label points. -->
+                     label points. The current values come from each city's real
+                     latitude/longitude run through the same projection that drew
+                     img/india-map.svg, so they sit on the actual city. Adding a
+                     city by hand? Open the page with ?pins=tune and click it. -->
                 <ul class="pr-list" id="prLocations">
-                    <li data-x="29" data-y="24" data-side="right"><b>Delhi</b><span>Delhi</span></li>
-                    <li data-x="37" data-y="31" data-side="right"><b>Uttar Pradesh</b><span>Noida, Lucknow</span></li>
-                    <li data-x="32" data-y="47" data-side="right"><b>Madhya Pradesh</b><span>Bhopal</span></li>
-                    <li data-x="14" data-y="58" data-side="left"><b>Maharashtra</b><span>Mumbai</span></li>
-                    <li data-x="15" data-y="66" data-side="left"><b>Maharashtra</b><span>Thane</span></li>
-                    <li data-x="27" data-y="77" data-side="right"><b>Karnataka</b><span>Bangalore</span></li>
+                    <li data-x="30.9" data-y="26.9" data-side="right"><b>Delhi</b><span>Delhi</span></li>
+                    <li data-x="43.7" data-y="32.5" data-side="right"><b>Uttar Pradesh</b><span>Noida, Lucknow</span></li>
+                    <li data-x="31.6" data-y="43.9" data-side="right"><b>Madhya Pradesh</b><span>Bhopal</span></li>
+                    <li data-x="16.1" data-y="57.2" data-side="left"><b>Maharashtra</b><span>Mumbai, Thane</span></li>
+                    <li data-x="32.2" data-y="76.6" data-side="right"><b>Karnataka</b><span>Bangalore</span></li>
                 </ul>
             </div>
 
