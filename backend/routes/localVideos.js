@@ -1,7 +1,7 @@
 const express = require('express');
 const LocalVideo = require('../models/LocalVideo');
 const { protect } = require('../middleware/auth');
-const { uploadVideo, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
+const { uploadVideo, uploadFile, deleteFile } = require('../config/storage');
 
 const router = express.Router();
 
@@ -34,7 +34,7 @@ router.post('/', protect, uploadVideo.single('video'), async (req, res) => {
     const { title, description, badge, order } = req.body;
     if (!title) return res.status(400).json({ success: false, message: 'Title is required' });
 
-    const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/local-videos');
+    const { url, fileId } = await uploadFile(req.file, 'dod-healthcare/local-videos');
 
     const video = await LocalVideo.create({
       title,
@@ -64,8 +64,8 @@ router.put('/:id', protect, uploadVideo.single('video'), async (req, res) => {
     if (isActive !== undefined) video.isActive  = isActive === 'true' || isActive === true;
 
     if (req.file) {
-      await deleteFromImageKit(video.imagekitFileId);
-      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/local-videos');
+      await deleteFile(video.imagekitFileId);
+      const { url, fileId } = await uploadFile(req.file, 'dod-healthcare/local-videos');
       video.videoUrl       = url;
       video.imagekitFileId = fileId;
     }
@@ -83,7 +83,7 @@ router.delete('/:id', protect, async (req, res) => {
     const video = await LocalVideo.findById(req.params.id);
     if (!video) return res.status(404).json({ success: false, message: 'Video not found' });
 
-    await deleteFromImageKit(video.imagekitFileId);
+    await deleteFile(video.imagekitFileId);
     await video.deleteOne();
     res.json({ success: true, message: 'Video deleted successfully' });
   } catch (err) {

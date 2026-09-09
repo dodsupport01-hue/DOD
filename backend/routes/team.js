@@ -1,7 +1,7 @@
 const express = require('express');
 const TeamMember = require('../models/TeamMember');
 const { protect } = require('../middleware/auth');
-const { uploadTeam, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
+const { uploadTeam, uploadFile, deleteFile } = require('../config/storage');
 
 const router = express.Router();
 
@@ -40,7 +40,7 @@ router.post('/', protect, uploadTeam.single('image'), async (req, res) => {
     let imageUrl = '';
     let imagekitFileId = '';
     if (req.file) {
-      const uploaded = await uploadToImageKit(req.file, 'dod-healthcare/team');
+      const uploaded = await uploadFile(req.file, 'dod-healthcare/team');
       imageUrl = uploaded.url;
       imagekitFileId = uploaded.fileId;
     }
@@ -84,8 +84,8 @@ router.put('/:id', protect, uploadTeam.single('image'), async (req, res) => {
     if (isActive !== undefined) member.isActive = isActive === 'true' || isActive === true;
 
     if (req.file) {
-      await deleteFromImageKit(member.imagekitFileId);
-      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/team');
+      await deleteFile(member.imagekitFileId);
+      const { url, fileId } = await uploadFile(req.file, 'dod-healthcare/team');
       member.imageUrl = url;
       member.imagekitFileId = fileId;
     }
@@ -103,7 +103,7 @@ router.delete('/:id', protect, async (req, res) => {
     const member = await TeamMember.findById(req.params.id);
     if (!member) return res.status(404).json({ success: false, message: 'Team member not found' });
 
-    await deleteFromImageKit(member.imagekitFileId);
+    await deleteFile(member.imagekitFileId);
     await member.deleteOne();
     res.json({ success: true, message: 'Team member deleted successfully' });
   } catch (err) {

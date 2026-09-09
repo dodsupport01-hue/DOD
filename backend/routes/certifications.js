@@ -1,7 +1,7 @@
 const express = require('express');
 const Certification = require('../models/Certification');
 const { protect } = require('../middleware/auth');
-const { uploadCert, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
+const { uploadCert, uploadFile, deleteFile } = require('../config/storage');
 
 const router = express.Router();
 
@@ -43,7 +43,7 @@ router.post('/', protect, uploadCert.single('logo'), async (req, res) => {
     };
 
     if (req.file) {
-      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/certifications');
+      const { url, fileId } = await uploadFile(req.file, 'dod-healthcare/certifications');
       certData.logoUrl = url;
       certData.imagekitFileId = fileId;
     }
@@ -71,8 +71,8 @@ router.put('/:id', protect, uploadCert.single('logo'), async (req, res) => {
     if (isActive !== undefined) cert.isActive = isActive === 'true' || isActive === true;
 
     if (req.file) {
-      await deleteFromImageKit(cert.imagekitFileId);
-      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/certifications');
+      await deleteFile(cert.imagekitFileId);
+      const { url, fileId } = await uploadFile(req.file, 'dod-healthcare/certifications');
       cert.logoUrl = url;
       cert.imagekitFileId = fileId;
     }
@@ -90,7 +90,7 @@ router.delete('/:id', protect, async (req, res) => {
     const cert = await Certification.findById(req.params.id);
     if (!cert) return res.status(404).json({ success: false, message: 'Certification not found' });
 
-    await deleteFromImageKit(cert.imagekitFileId);
+    await deleteFile(cert.imagekitFileId);
     await cert.deleteOne();
 
     res.json({ success: true, message: 'Certification deleted successfully' });
