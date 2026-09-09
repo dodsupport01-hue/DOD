@@ -2675,11 +2675,22 @@
                 }
 
                 /* ── stage: map + side panel ── */
+                /* Map on its own by default. The second column is added back
+                   only when the side panel is actually present, so hiding the
+                   panel doesn't leave a reserved empty column beside the map. */
                 .pr-stage {
                     display: grid;
-                    grid-template-columns: minmax(0, 1.45fr) minmax(290px, 0.85fr);
+                    grid-template-columns: 1fr;
                     gap: 2rem;
                     align-items: start;
+                }
+                .pr-stage:has(.pr-side) {
+                    grid-template-columns: minmax(0, 1.45fr) minmax(290px, 0.85fr);
+                }
+                /* Solo, the map can use more of the width than it does when it
+                   is sharing the row with the detail card. */
+                .pr-stage:not(:has(.pr-side)) .pr-map {
+                    max-width: 660px;
                 }
 
                 /* ── map panel ── */
@@ -3329,13 +3340,10 @@
                             />
                             <!-- kiosk markers are built from the list below -->
                         </div>
-                        <p class="pr-hint">
-                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5 4 9l16-6-6 16-2.5-5L9 11.5Z" /></svg>
-                            Tap a kiosk to see where we are
-                        </p>
+
                     </div>
 
-                    <aside class="pr-side">
+                    <!-- <aside class="pr-side">
                         <div class="pr-card" id="prCard">
                             <div class="pr-card-top">
                                 <img class="pr-card-img" src="img/kiosk-marker.webp" alt="" aria-hidden="true" width="132" height="279" loading="lazy" decoding="async" />
@@ -3372,7 +3380,7 @@
                                 <div><strong>Records Kept Safe</strong><span>Every visit is saved to your digital health record.</span></div>
                             </li>
                         </ul>
-                    </aside>
+                    </aside> -->
                 </div>
 
                 <ul class="pr-stats">
@@ -3403,7 +3411,10 @@
                     var map = document.getElementById("prMap");
                     var rail = document.getElementById("prRail");
                     var items = sec ? sec.querySelectorAll("#prLocations li") : [];
-                    if (!sec || !map || !rail || !items.length) return;
+                    // Only the map and the location list are required. The side
+                    // panel — chip rail and detail card — is optional: hiding it
+                    // must not take the kiosk markers down with it.
+                    if (!sec || !map || !items.length) return;
 
                     // Hover-to-preview only where there is a real cursor.
                     var fine = window.matchMedia ? window.matchMedia("(hover: hover) and (pointer: fine)").matches : false;
@@ -3462,7 +3473,8 @@
                         pinFrag.appendChild(pin);
                         pins.push(pin);
 
-                        // ── chip ──
+                        // ── chip (only when the rail is on the page) ──
+                        if (!rail) return;
                         var li = document.createElement("li");
                         var chip = document.createElement("button");
                         chip.type = "button";
@@ -3476,7 +3488,7 @@
                     });
 
                     map.appendChild(pinFrag);
-                    rail.appendChild(railFrag);
+                    if (rail) rail.appendChild(railFrag);
                     sec.classList.add("pr-has-pins");
 
                     var cardState = document.getElementById("prCardState");
@@ -3511,7 +3523,7 @@
                         if (cardCities) cardCities.textContent = p.cities;
 
                         // keep the chosen chip in view on a phone's scrolling rail
-                        if (byUser && chips[i].scrollIntoView) {
+                        if (byUser && chips[i] && chips[i].scrollIntoView) {
                             chips[i].scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
                         }
                     }
