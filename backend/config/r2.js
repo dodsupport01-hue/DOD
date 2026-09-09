@@ -17,12 +17,26 @@
 
 const crypto = require('crypto');
 const path = require('path');
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+
+// The site runs on ImageKit, so the S3 SDK is deliberately NOT a dependency —
+// there is no reason for the production install to carry it. It is loaded only
+// if someone actually selects the R2 driver, with an error that says what to do.
+function sdk() {
+  try {
+    return require('@aws-sdk/client-s3');
+  } catch (err) {
+    throw new Error(
+      'The R2 driver needs the S3 SDK, which is not installed (production runs on ImageKit). ' +
+        'Run `npm install @aws-sdk/client-s3` in backend/ first — see cloudflare/SETUP.md.'
+    );
+  }
+}
 
 let _client = null;
 
 function getClient() {
   if (_client) return _client;
+  const { S3Client } = sdk();
   const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY } = process.env;
   if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
     throw new Error(
@@ -95,6 +109,7 @@ async function uploadToR2(file, folder) {
   if (!file || !file.buffer) throw new Error('No file buffer to upload');
   const key = buildKey(folder, file.originalname);
 
+  const { PutObjectCommand } = sdk();
   await getClient().send(
     new PutObjectCommand({
       Bucket: process.env.R2_BUCKET,
@@ -112,6 +127,7 @@ async function uploadToR2(file, folder) {
 async function deleteFromR2(key) {
   if (!key) return;
   try {
+    const { DeleteObjectCommand } = sdk();
     await getClient().send(
       new DeleteObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key })
     );

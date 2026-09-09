@@ -12,7 +12,8 @@
  *
  *  ── USAGE ───────────────────────────────────────────────────────────────────
  *    cd backend
- *    npm install                       # picks up @aws-sdk/client-s3
+ *    npm install @aws-sdk/client-s3    # not a production dependency: the site
+ *                                      # runs on ImageKit and never loads it
  *    # .env needs MONGODB_URI + the five R2_* vars (see .env.example)
  *    npm run migrate:r2 -- --dry-run   # look first
  *    npm run migrate:r2                # then move

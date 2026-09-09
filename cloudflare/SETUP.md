@@ -103,9 +103,12 @@ forever is safe.
 
 ## 3. Backend
 
+The site runs on ImageKit, so the S3 SDK is **not** a dependency — production
+does not install it. Add it only when you actually move to R2:
+
 ```bash
 cd backend
-npm install                 # brings in @aws-sdk/client-s3
+npm install @aws-sdk/client-s3
 ```
 
 Add to `backend/.env` (and to Render → Environment):
