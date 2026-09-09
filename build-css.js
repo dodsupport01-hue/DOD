@@ -11,6 +11,7 @@
 //     node build-css.js
 
 const fs = require('fs');
+const crypto = require('crypto');
 const CleanCSS = require('clean-css');
 
 // fonts.css must come FIRST so the @font-face rules are declared before any
@@ -31,6 +32,35 @@ if (result.warnings.length) {
 }
 
 fs.writeFileSync(OUT, result.styles);
+
+// ─── Cache-bust the <link> in index.html ─────────────────────────────────────
+//
+// styles.min.css is served with `max-age=86400` and its filename never changes,
+// so a CSS deploy is invisible to anything already holding a copy for up to a
+// day. That is not theoretical: a font change shipped correctly to the origin
+// and the site kept rendering the old faces, because Hostinger's edge was still
+// handing out yesterday's stylesheet under the same URL.
+//
+// Stamping a hash of the built file onto the href makes each build a distinct
+// URL, so caches treat it as a new resource and there is nothing stale to
+// serve. The hash only changes when the CSS does, so unchanged builds keep
+// their cached copy.
+const HTML = 'index.html';
+const hash = crypto.createHash('sha1').update(result.styles).digest('hex').slice(0, 8);
+
+if (fs.existsSync(HTML)) {
+  const html = fs.readFileSync(HTML, 'utf8');
+  const stamped = html.replace(
+    /href="styles\.min\.css(?:\?v=[a-f0-9]+)?"/,
+    'href="styles.min.css?v=' + hash + '"'
+  );
+  if (stamped !== html) {
+    fs.writeFileSync(HTML, stamped);
+    console.log('stamped ' + HTML + ' -> styles.min.css?v=' + hash);
+  } else if (!html.includes('styles.min.css?v=' + hash)) {
+    console.warn('WARNING: could not find the styles.min.css <link> in ' + HTML + ' to stamp.');
+  }
+}
 
 const kb = (n) => Math.round(n / 1024) + ' KB';
 console.log('combined ' + FILES.length + ' files : ' + kb(combined.length));
