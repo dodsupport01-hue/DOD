@@ -2,6 +2,10 @@
 backend/.env
 backend/node_modules/
 
+# Root-level dev dependency. build-css.js needs clean-css installed here to
+# rebuild styles.min.css; the package itself is never deployed.
+node_modules/
+
 # OS files
 .DS_Store
 Thumbs.db

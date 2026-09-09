@@ -1324,21 +1324,88 @@
                     <!-- Centre: Spline 3D body mockup -->
                     <div class="mc-body-widget" data-aos="fade-up">
                         <canvas class="mc-spline-canvas" id="mc-spline-canvas"></canvas>
+                        <!-- Still frame of the same scene, shown whenever the live
+                             one cannot run: no WebGL, reduced motion, data saver,
+                             or the runtime failing to arrive. Without it a failure
+                             left an empty box. -->
+                        <img
+                            class="mc-spline-poster"
+                            src="img/body-scan-poster.webp"
+                            alt="3D body composition scan shown on the DOD health kiosk"
+                            width="680"
+                            height="991"
+                            loading="lazy"
+                            decoding="async"
+                        />
                         <style>
                             .mc-body-widget {
+                                position: relative;
                                 display: flex;
                                 flex-direction: column;
                                 align-items: center;
+                                /* It is a grid item, so it stretches to the tallest
+                                   column in the row. Centring keeps the figure in
+                                   the middle of that space instead of stranded at
+                                   one end of it. */
+                                justify-content: center;
                                 gap: 0.75rem;
                                 width: 100%;
                             }
-                            .mc-spline-canvas {
+                            /* The poster is the element that occupies the layout;
+                               the live canvas sits exactly on top of it. Keeping
+                               the canvas in the box (rather than display:none)
+                               matters — the runtime reads its size on init, and a
+                               zero-size canvas renders nothing. */
+                            .mc-spline-poster {
                                 width: 100%;
                                 max-width: 340px;
                                 aspect-ratio: 7/12;
                                 border-radius: 12px;
                                 display: block;
                                 height: auto;
+                                object-fit: cover;
+                                background: #0b1220;
+                            }
+                            .mc-spline-canvas {
+                                position: absolute;
+                                /* Centred on the widget, exactly like the poster
+                                   it covers, so the handover is invisible. */
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                width: 100%;
+                                max-width: 340px;
+                                aspect-ratio: 7/12;
+                                border-radius: 12px;
+                                display: block;
+                                height: auto;
+                                opacity: 0;
+                                transition: opacity 0.45s ease;
+                            }
+                            /* Live scene arrived: fade it in over the still. */
+                            .mc-spline-ready .mc-spline-canvas {
+                                opacity: 1;
+                            }
+                            .mc-spline-ready .mc-spline-poster {
+                                visibility: hidden;
+                            }
+                            /* Quiet pulse while the runtime is on its way. */
+                            .mc-spline-loading .mc-spline-poster {
+                                animation: mc-spline-fade 1.6s ease-in-out infinite;
+                            }
+                            @keyframes mc-spline-fade {
+                                0%,
+                                100% {
+                                    opacity: 0.78;
+                                }
+                                50% {
+                                    opacity: 1;
+                                }
+                            }
+                            @media (prefers-reduced-motion: reduce) {
+                                .mc-spline-loading .mc-spline-poster {
+                                    animation: none;
+                                }
                             }
                             .mc-body-caption {
                                 font-size: 0.68rem;
@@ -1362,7 +1429,10 @@
 
                                 const widget = canvas.closest(".mc-body-widget");
                                 const posterOnly = () => {
-                                    if (widget) widget.classList.add("mc-spline-off");
+                                    if (widget) {
+                                        widget.classList.remove("mc-spline-loading");
+                                        widget.classList.add("mc-spline-off");
+                                    }
                                     canvas.remove();
                                 };
 
@@ -1390,19 +1460,52 @@
                                     started = true;
                                     widget && widget.classList.add("mc-spline-loading");
 
-                                    import("https://esm.sh/@splinetool/runtime")
-                                        .then(function (mod) {
+                                    // The runtime used to come from esm.sh, which
+                                    // stopped answering: the request hung open
+                                    // instead of failing, so import() never
+                                    // settled, .catch() never ran, and the widget
+                                    // sat in its loading state forever showing an
+                                    // empty box on every device. jsDelivr serves
+                                    // the same module; unpkg is the spare.
+                                    //
+                                    // The timeouts are the real safeguard — a CDN
+                                    // that hangs rather than errors can no longer
+                                    // strand this. 8s per runtime source, and 20s
+                                    // over the whole attempt including the scene
+                                    // download, after which the still frame stays.
+                                    const RUNTIMES = [
+                                        "https://cdn.jsdelivr.net/npm/@splinetool/runtime/build/runtime.js",
+                                        "https://unpkg.com/@splinetool/runtime/build/runtime.js",
+                                    ];
+
+                                    const withTimeout = (promise, ms) =>
+                                        Promise.race([
+                                            promise,
+                                            new Promise((_, reject) => setTimeout(() => reject(new Error("timed out after " + ms + "ms")), ms)),
+                                        ]);
+
+                                    const loadRuntime = () =>
+                                        withTimeout(import(RUNTIMES[0]), 8000).catch(function (e) {
+                                            console.warn("Spline runtime CDN failed (" + e.message + "), trying the spare");
+                                            return withTimeout(import(RUNTIMES[1]), 8000);
+                                        });
+
+                                    withTimeout(
+                                        loadRuntime().then(function (mod) {
                                             app = new mod.Application(canvas);
                                             return app.load("https://prod.spline.design/0eI7JO23zWEe8FiA/scene.splinecode");
-                                        })
+                                        }),
+                                        20000,
+                                    )
                                         .then(function () {
                                             widget && widget.classList.remove("mc-spline-loading");
                                             widget && widget.classList.add("mc-spline-ready");
-                                            const ro = new ResizeObserver(function () {
-                                                canvas.width = canvas.offsetWidth;
-                                                canvas.height = canvas.offsetHeight;
-                                            });
-                                            ro.observe(canvas);
+                                            // Deliberately no ResizeObserver here. Assigning
+                                            // canvas.width/height by hand resets the drawing
+                                            // buffer out from under the runtime and the camera
+                                            // ends up framing a corner of the scene — the
+                                            // figure renders cropped and off-centre. The
+                                            // runtime tracks the element's size on its own.
                                         })
                                         .catch(function (e) {
                                             // Never leave a blank box: fall back to the poster.
