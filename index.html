@@ -3912,6 +3912,29 @@
                         if (s) s.style.display = "none";
                     }
 
+                    // The CDN could not cut a poster frame out of this clip —
+                    // video thumbnail extraction is not enabled on every plan,
+                    // and R2 cannot do it at all. Rather than leave the tile as
+                    // a bare play button, fall back to what it used to do: let
+                    // the browser pull just enough of the video to paint one
+                    // frame. Only the tiles that actually failed pay for it.
+                    window.crPosterFail = function (img) {
+                        var tile = img.parentElement;
+                        var url = img.getAttribute("data-vid");
+                        img.remove();
+                        if (!tile || !url) return;
+                        var v = document.createElement("video");
+                        v.muted = true;
+                        v.playsInline = true;
+                        v.preload = "metadata";
+                        v.setAttribute("muted", "");
+                        v.setAttribute("playsinline", "");
+                        // The media fragment nudges the browser past frame zero,
+                        // which is black on a lot of phone recordings.
+                        v.src = url + "#t=0.1";
+                        tile.insertBefore(v, tile.firstChild);
+                    };
+
                     DOD.fetchJSON(API + "/reviews")
                         .then(function (resp) {
                             if (!resp.success || !resp.data || !resp.data.length) return hideSection();
@@ -3935,7 +3958,12 @@
                                         // lazily loaded by the browser itself. The clip
                                         // is only fetched when the lightbox opens.
                                         (function (p) {
-                                            return p ? '<img src="' + esc(p) + '" alt="" loading="lazy" decoding="async" onerror="this.style.visibility=\'hidden\'">' : "";
+                                            if (!p) return "";
+                                            return (
+                                                '<img src="' + esc(p) + '" alt="" loading="lazy" decoding="async" data-vid="' +
+                                                esc(r.videoUrl) +
+                                                '" onerror="crPosterFail(this)">'
+                                            );
                                         })(r.thumbnailUrl || DOD.poster(r.videoUrl, 480)) +
                                         '<span class="cr-play">' +
                                         PLAY_ICON +
