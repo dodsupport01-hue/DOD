@@ -3798,12 +3798,8 @@
                     color: #fbbf24;
                     margin-bottom: 0.2rem;
                 }
-                .cr-name {
-                    display: block;
-                    font-size: 0.92rem;
-                    font-weight: 700;
-                    line-height: 1.3;
-                }
+                /* .cr-name is gone — reviews are published unattributed. Location
+                   still renders when one has been set. */
                 .cr-loc {
                     display: block;
                     font-size: 0.75rem;
@@ -3951,8 +3947,8 @@
                 <button class="cr-lb-nav cr-lb-prev" onclick="crNavLb(-1)" aria-label="Previous review">&#8249;</button>
                 <div class="cr-lb-box">
                     <video id="crLbVideo" controls playsinline preload="metadata"></video>
+                    <!-- Unattributed: no reviewer name is shown anywhere. -->
                     <div class="cr-lb-meta">
-                        <strong id="crLbName"></strong>
                         <span id="crLbLoc"></span>
                         <p id="crLbQuote"></p>
                     </div>
@@ -4005,7 +4001,6 @@
                         var p = r.thumbnailUrl || DOD.poster(r.videoUrl, 720);
                         if (p) v.poster = p;
                         else v.removeAttribute("poster");
-                        document.getElementById("crLbName").textContent = r.customerName || "";
                         document.getElementById("crLbLoc").textContent = r.location || "";
                         var q = document.getElementById("crLbQuote");
                         q.textContent = r.quote ? '"' + r.quote + '"' : "";
@@ -4063,8 +4058,8 @@
                                         (i === 0 ? " cr-tile--feature" : "") +
                                         '" onclick="crOpenLb(' +
                                         i +
-                                        ')" tabindex="0" role="button" aria-label="Play review by ' +
-                                        esc(r.customerName) +
+                                        ')" tabindex="0" role="button" aria-label="Play customer video review ' +
+                                        (i + 1) +
                                         '">' +
                                         // A still image, not a <video>. Twelve <video>
                                         // elements cost twelve connections and twelve
@@ -4087,9 +4082,8 @@
                                         '<span class="cr-stars">' +
                                         stars(r.rating) +
                                         "</span>" +
-                                        '<span class="cr-name">' +
-                                        esc(r.customerName) +
-                                        "</span>" +
+                                        // Reviewers are not named. Location still
+                                        // shows when one is set.
                                         (r.location ? '<span class="cr-loc">' + esc(r.location) + "</span>" : "") +
                                         "</figcaption>" +
                                         "</figure>"
@@ -4162,11 +4156,6 @@
                         <p>DOD's nationwide health grid is transforming how Bharat accesses healthcare through digital kiosks.</p>
                         <span class="ns-read">Read Article -></span>
                     </a>
-                    <!-- Add more news cards here as coverage grows -->
-                    <div class="ns-cta">
-                        <span>More coverage coming soon</span>
-                        <p>For press and media inquiries: <a href="mailto:info@dodind.com">info@dodind.com</a></p>
-                    </div>
                 </div>
             </div>
 
@@ -4481,8 +4470,6 @@
                 <!-- Header -->
                 <div class="aj-eyebrow" data-aos="fade-up">Our Story</div>
                 <h2 class="aj-headline" data-aos="fade-up" data-aos-delay="60">About DOD &mdash;<br /><em>Our Journey</em></h2>
-                <p class="aj-company" data-aos="fade-up" data-aos-delay="120">Amazemedics Pvt. Ltd.</p>
-
                 <div class="aj-rule" data-aos="fade-up" data-aos-delay="160"></div>
 
                 <!-- Vision + Values editorial split -->

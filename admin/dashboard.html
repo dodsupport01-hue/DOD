@@ -641,7 +641,7 @@
     <div class="modal-body">
       <div id="reviewModalAlert" class="alert" style="display:none;"></div>
       <input type="hidden" id="reviewEditId" />
-      <div><label class="form-label">Customer Name *</label><input type="text" class="form-input" id="reviewName" placeholder="e.g. Sunita Devi" /></div>
+      <!-- Reviewer names are not collected: reviews are published unattributed. -->
       <div><label class="form-label">Location</label><input type="text" class="form-input" id="reviewLocation" placeholder="e.g. Lucknow, Uttar Pradesh" /></div>
       <div>
         <label class="form-label">Rating</label>
@@ -1380,22 +1380,25 @@ function renderReviews() {
   const grid = document.getElementById('reviewsGrid');
   const empty = document.getElementById('reviewsEmpty');
   if (!reviews.length) { empty.style.display = ''; grid.style.display = 'none'; return; }
-  grid.innerHTML = reviews.map(r => {
+  grid.innerHTML = reviews.map((r, i) => {
     const stars = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+    // Reviews carry no name any more, so they are identified by their position
+    // in this list — which matches the order they appear on the site.
+    const label = `Review ${i + 1}`;
     return `
     <div class="item-card">
       <div class="item-img" style="background:#0f172a;display:flex;align-items:center;justify-content:center;">
         <video src="${escHtml(r.videoUrl)}" ${r.thumbnailUrl ? `poster="${escHtml(r.thumbnailUrl)}"` : ''} style="width:100%;height:100%;object-fit:cover;" preload="none"></video>
       </div>
       <div class="item-info">
-        <div class="item-name">${escHtml(r.customerName)}${!r.isActive ? '<span class="item-badge-inactive">Hidden</span>' : ''}</div>
+        <div class="item-name">${label}${!r.isActive ? '<span class="item-badge-inactive">Hidden</span>' : ''}</div>
         <div class="item-desc" style="color:#f59e0b;">${stars}</div>
         ${r.location ? `<div class="item-desc">${escHtml(r.location)}</div>` : ''}
         ${r.quote ? `<div class="item-desc">"${escHtml(r.quote)}"</div>` : ''}
       </div>
       <div class="item-actions">
         <button class="btn btn-outline" onclick="editReview('${r._id}')">✏️ Edit</button>
-        <button class="btn btn-danger" onclick="deleteReview('${r._id}','${escHtml(r.customerName)}')">🗑️ Delete</button>
+        <button class="btn btn-danger" onclick="deleteReview('${r._id}','${label}')">🗑️ Delete</button>
       </div>
     </div>`;
   }).join('');
@@ -1405,7 +1408,6 @@ function renderReviews() {
 function openReviewModal(rev = null) {
   document.getElementById('reviewEditId').value = rev ? rev._id : '';
   document.getElementById('reviewModalTitle').textContent = rev ? 'Edit Customer Review' : 'Upload Customer Review';
-  document.getElementById('reviewName').value = rev ? rev.customerName : '';
   document.getElementById('reviewLocation').value = rev ? (rev.location || '') : '';
   document.getElementById('reviewRating').value = rev ? String(rev.rating || 5) : '5';
   document.getElementById('reviewQuote').value = rev ? (rev.quote || '') : '';
@@ -1425,8 +1427,6 @@ function editReview(id) { const r = reviews.find(x => x._id === id); if (r) open
 
 async function saveReview() {
   const id = document.getElementById('reviewEditId').value;
-  const name = document.getElementById('reviewName').value.trim();
-  if (!name) { showModalAlert('reviewModalAlert', 'Customer name is required.'); return; }
 
   const videoInput = document.getElementById('reviewFile');
   const posterInput = document.getElementById('reviewPoster');
@@ -1436,7 +1436,6 @@ async function saveReview() {
   btn.disabled = true; btn.textContent = 'Uploading...';
 
   const fd = new FormData();
-  fd.append('customerName', name);
   fd.append('location', document.getElementById('reviewLocation').value);
   fd.append('rating', document.getElementById('reviewRating').value);
   fd.append('quote', document.getElementById('reviewQuote').value);
@@ -1478,9 +1477,9 @@ async function saveReview() {
   }
 }
 
-async function deleteReview(id, name) {
-  if (!confirm(`Delete the review by "${name}"? The video will also be removed from ImageKit.`)) return;
-  try { await apiCall(`/reviews/${id}`, 'DELETE'); toast(`Review by "${name}" deleted.`, 'info'); loadReviews(); }
+async function deleteReview(id, label) {
+  if (!confirm(`Delete ${label}? The video will also be removed from storage.`)) return;
+  try { await apiCall(`/reviews/${id}`, 'DELETE'); toast(`${label} deleted.`, 'info'); loadReviews(); }
   catch (err) { toast('Delete failed: ' + err.message, 'error'); }
 }
 

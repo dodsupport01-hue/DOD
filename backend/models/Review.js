@@ -1,7 +1,10 @@
 const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema({
-  customerName:    { type: String, required: [true, 'Customer name is required'], trim: true },
+  // Reviews are published unattributed — the site shows no reviewer name, and
+  // the admin panel no longer asks for one. Kept on the schema (optional) so
+  // the names already stored on existing records are not lost.
+  customerName:    { type: String, default: '', trim: true },
   location:        { type: String, default: '' },          // e.g. "Lucknow, UP"
   rating:          { type: Number, default: 5, min: 1, max: 5 },
   quote:           { type: String, default: '' },          // short written testimonial

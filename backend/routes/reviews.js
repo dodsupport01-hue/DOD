@@ -40,10 +40,8 @@ router.post('/', protect, uploadFields, async (req, res) => {
     if (!videoFile) {
       return res.status(400).json({ success: false, message: 'Video file is required' });
     }
+    // customerName is optional now: reviews are published unattributed.
     const { customerName, location, rating, quote, order } = req.body;
-    if (!customerName) {
-      return res.status(400).json({ success: false, message: 'Customer name is required' });
-    }
 
     const video = await uploadFile(videoFile, 'dod-healthcare/reviews');
     const poster = posterFile
@@ -51,7 +49,7 @@ router.post('/', protect, uploadFields, async (req, res) => {
       : null;
 
     const review = await Review.create({
-      customerName,
+      customerName: customerName || '',
       location: location || '',
       rating: rating ? parseInt(rating) : 5,
       quote: quote || '',
