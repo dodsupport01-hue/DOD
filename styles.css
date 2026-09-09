@@ -54,17 +54,28 @@ html {
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: var(--text-primary);
     background: var(--bg-secondary);
     line-height: 1.6;
+    /* Plus Jakarta Sans is drawn on the wide side; a touch of negative tracking
+       is what gives it the tight, modern setting it is usually seen in. Kept
+       lighter than the display sizes below — body copy still has to be read. */
+    letter-spacing: -0.01em;
     overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 700;
     line-height: 1.2;
+    /* Display sizes take the tracking harder — this is the single thing that
+       most defines the look. */
+    letter-spacing: -0.03em;
+}
+
+h1 {
+    letter-spacing: -0.04em;
 }
 
 img {
@@ -2633,7 +2644,7 @@ textarea.form-input {
     border: 1px solid #e5e7eb;
     border-radius: 25px;
     font-size: 0.938rem;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     outline: none;
     transition: all 0.2s ease;
 }
@@ -2960,11 +2971,23 @@ textarea.form-input {
 }
 
 /* ===== AOS Animation Styles ===== */
+/* Motion character: a long, decelerating settle rather than a linear slide.
+   cubic-bezier(0.22, 1, 0.36, 1) is an ease-out-quint — it covers most of the
+   distance immediately then eases into place, which is what makes a reveal read
+   as "arriving" instead of "sliding". The same curve is reused for hover lifts
+   below so the whole page moves with one accent. */
 [data-aos] {
     opacity: 0;
     transition-property: opacity, transform;
-    transition-duration: 0.8s;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 0.9s;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+}
+
+/* Once revealed, drop the compositor hint — leaving will-change on dozens of
+   elements keeps layers alive for the life of the page. */
+[data-aos].aos-animate {
+    will-change: auto;
 }
 
 [data-aos].aos-animate {
@@ -2972,7 +2995,7 @@ textarea.form-input {
 }
 
 [data-aos="fade-up"] {
-    transform: translateY(30px);
+    transform: translateY(34px);
 }
 
 [data-aos="fade-up"].aos-animate {

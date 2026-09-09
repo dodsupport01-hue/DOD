@@ -105,12 +105,13 @@
         <link rel="alternate" hreflang="x-default" href="https://dodsmarthealth.com/" />
 
         <!-- ================ PERFORMANCE: PRECONNECT / PRELOAD / DNS-PREFETCH =-->
-        <!-- Fonts are self-hosted now (fonts.css), so the googleapis/gstatic
-             preconnects are gone, along with those two third-party round-trips.
-             Preload the two faces used above the fold — otherwise the browser
-             only discovers them after parsing the CSS, delaying text paint. -->
-        <link rel="preload" as="font" type="font/woff2" href="fonts/inter-var.woff2" crossorigin />
-        <link rel="preload" as="font" type="font/woff2" href="fonts/poppins-700.woff2" crossorigin />
+        <!-- Fonts are self-hosted (fonts.css), so the googleapis/gstatic
+             preconnects are gone along with those two third-party round-trips.
+             Plus Jakarta Sans is variable — one file covers every weight, so
+             this is now a single font request for the whole page. Preloaded
+             because otherwise the browser only discovers it after parsing the
+             CSS, which delays text paint. -->
+        <link rel="preload" as="font" type="font/woff2" href="fonts/jakarta-var.woff2" crossorigin />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.youtube.com" />
@@ -385,13 +386,28 @@
              appear as soon as they are scrolled to. -->
         <script>
             (function () {
+                // Visitors who asked for less motion get the finished state with
+                // no travel at all — the content is identical, it just does not
+                // move on the way in.
+                var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
                 function reveal(el) {
+                    // data-aos-delay is what staggers a row of cards. The
+                    // attributes were already on the markup but nothing read
+                    // them, so every card in a row arrived at once.
+                    if (!calm) {
+                        var d = el.getAttribute("data-aos-delay");
+                        if (d) el.style.transitionDelay = parseInt(d, 10) + "ms";
+                    }
                     el.classList.add("aos-animate");
                 }
                 function init() {
+                    // Tells the CSS the script is alive, which switches off the
+                    // blanket 1.5s failsafe reveal so scroll timing is ours.
+                    document.documentElement.classList.add("aos-ready");
                     var els = document.querySelectorAll("[data-aos]");
-                    if (!("IntersectionObserver" in window)) {
-                        for (var i = 0; i < els.length; i++) reveal(els[i]);
+                    if (calm || !("IntersectionObserver" in window)) {
+                        for (var i = 0; i < els.length; i++) els[i].classList.add("aos-animate");
                         return;
                     }
                     var io = new IntersectionObserver(

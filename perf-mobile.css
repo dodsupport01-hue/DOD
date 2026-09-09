@@ -23,10 +23,16 @@ html.no-js [data-aos] {
     transform: none !important;
 }
 
-/* Failsafe reveal: if the reveal script somehow never runs, this keyframe
-   forces every animated element visible shortly after paint, so a section
-   can never be left permanently blank. Elements the script reveals get
-   .aos-animate and simply transition normally. */
+/* Failsafe reveal: if the reveal script never runs, this forces every animated
+   element visible shortly after paint, so a section can never be left
+   permanently blank.
+
+   It is gated on html.aos-ready, which the reveal script sets the moment it
+   starts. Ungated, it fired 1.5s after load on EVERY element including ones far
+   below the fold — so by the time you scrolled to a section it had already
+   revealed itself and no scroll animation was ever seen. The safety net is
+   intact (no script, no class, failsafe fires); it just no longer pre-empts the
+   thing it is a net for. */
 @keyframes aosFailsafeReveal {
     to {
         opacity: 1;
@@ -34,7 +40,7 @@ html.no-js [data-aos] {
     }
 }
 
-[data-aos] {
+html:not(.aos-ready) [data-aos] {
     animation: aosFailsafeReveal 0.3s linear 1.5s forwards;
 }
 
@@ -247,5 +253,123 @@ html.no-js [data-aos] {
     }
     to {
         opacity: 1;
+    }
+}
+
+/* ── 4. MOTION ACCENT ────────────────────────────────────────
+   One easing curve for the whole page — the same ease-out-quint the scroll
+   reveals use — so hovers feel like part of the same system rather than a
+   different set of animations bolted on.
+
+   Only transform and box-shadow are animated. Both are compositor properties,
+   so a card lifting cannot trigger layout on the rest of the section.
+--------------------------------------------------------------- */
+
+:root {
+    --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ht-card,
+.lv-card,
+.sc-card,
+.yt-card,
+.dg-cell,
+.cr-tile,
+.pr-feats li,
+.leader-card,
+.ns-card {
+    transition:
+        transform 0.35s var(--ease-settle),
+        box-shadow 0.4s var(--ease-settle);
+}
+
+/* Pointer devices only. On a touch screen :hover sticks after a tap, which
+   leaves a card stuck in its lifted state until you tap elsewhere. */
+@media (hover: hover) and (pointer: fine) {
+    .ht-card:hover,
+    .lv-card:hover,
+    .sc-card:hover,
+    .yt-card:hover,
+    .leader-card:hover,
+    .ns-card:hover {
+        transform: translateY(-6px);
+    }
+
+    .dg-cell:hover,
+    .cr-tile:hover {
+        transform: translateY(-4px) scale(1.012);
+    }
+
+    .pr-feats li:hover {
+        transform: translateY(-3px);
+    }
+}
+
+/* Buttons and links get a shorter, tighter version of the same move. */
+.btn,
+.cta-button,
+.hero-cta a,
+.yt-facade,
+.pr-chip {
+    transition:
+        transform 0.28s var(--ease-settle),
+        background 0.28s ease,
+        box-shadow 0.3s var(--ease-settle),
+        color 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn:hover,
+    .cta-button:hover,
+    .hero-cta a:hover {
+        transform: translateY(-2px);
+    }
+}
+
+/* Pressing anything should feel like pressing it. */
+.btn:active,
+.cta-button:active,
+.hero-cta a:active,
+.pr-chip:active {
+    transform: translateY(0) scale(0.985);
+    transition-duration: 0.08s;
+}
+
+/* Everything above is decoration. If reduced motion is requested, none of it
+   should move — including the scroll reveals, which are neutralised here as
+   well as in the observer so the state is correct even before JS runs. */
+/* [data-aos] itself is already neutralised by the reduced-motion block in
+   section 1; this covers the hover and press motion added above. */
+@media (prefers-reduced-motion: reduce) {
+    .ht-card,
+    .lv-card,
+    .sc-card,
+    .yt-card,
+    .dg-cell,
+    .cr-tile,
+    .pr-feats li,
+    .leader-card,
+    .ns-card,
+    .btn,
+    .cta-button,
+    .hero-cta a,
+    .yt-facade,
+    .pr-chip {
+        transition: none;
+    }
+
+    .ht-card:hover,
+    .lv-card:hover,
+    .sc-card:hover,
+    .yt-card:hover,
+    .leader-card:hover,
+    .ns-card:hover,
+    .dg-cell:hover,
+    .cr-tile:hover,
+    .pr-feats li:hover,
+    .btn:hover,
+    .cta-button:hover,
+    .hero-cta a:hover {
+        transform: none;
     }
 }

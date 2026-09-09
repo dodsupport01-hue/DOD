@@ -1,59 +1,24 @@
 /* Self-hosted fonts — latin subset only.
  *
- * Previously loaded from fonts.googleapis.com, which cost two extra
- * third-party round-trips (CSS from googleapis, then the .woff2 files from
- * gstatic) before text could render. Serving them from our own domain removes
- * both, and is the single biggest first-paint win on mobile.
+ * Loading these from fonts.googleapis.com would cost two extra third-party
+ * round-trips (CSS from googleapis, then the .woff2 from gstatic) before text
+ * could render. Serving from our own domain removes both, and is the single
+ * biggest first-paint win on mobile — so the new face is self-hosted like the
+ * old ones were, rather than linked.
  *
- * Inter ships as a VARIABLE font: one file covers weights 100-900, so the five
- * weights we use cost one 47KB download instead of five identical ones.
+ * Plus Jakarta Sans replaced Inter (body) and Poppins (headings). It is a
+ * VARIABLE font: one 27KB file covers weights 200-800, where the previous pair
+ * cost 48KB for Inter plus five separate ~8KB Poppins weights — about 88KB of
+ * font for two families, now 27KB for one.
  *
  * font-display: swap — text paints immediately in a fallback face and swaps
  * when the webfont arrives, so a slow font can never block content.
  */
 
-/* ---- Inter (variable: one file, every weight) ---- */
 @font-face {
-    font-family: "Inter";
+    font-family: "Plus Jakarta Sans";
     font-style: normal;
-    font-weight: 100 900;
+    font-weight: 200 800;
     font-display: swap;
-    src: url(fonts/inter-var.woff2) format("woff2");
-}
-
-/* ---- Poppins (only the weights the CSS actually uses) ---- */
-@font-face {
-    font-family: "Poppins";
-    font-style: normal;
-    font-weight: 300;
-    font-display: swap;
-    src: url(fonts/poppins-300.woff2) format("woff2");
-}
-@font-face {
-    font-family: "Poppins";
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url(fonts/poppins-400.woff2) format("woff2");
-}
-@font-face {
-    font-family: "Poppins";
-    font-style: normal;
-    font-weight: 600;
-    font-display: swap;
-    src: url(fonts/poppins-600.woff2) format("woff2");
-}
-@font-face {
-    font-family: "Poppins";
-    font-style: normal;
-    font-weight: 700;
-    font-display: swap;
-    src: url(fonts/poppins-700.woff2) format("woff2");
-}
-@font-face {
-    font-family: "Poppins";
-    font-style: normal;
-    font-weight: 800;
-    font-display: swap;
-    src: url(fonts/poppins-800.woff2) format("woff2");
+    src: url(fonts/jakarta-var.woff2) format("woff2");
 }
