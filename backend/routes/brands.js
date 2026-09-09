@@ -1,7 +1,7 @@
 const express = require('express');
 const Brand = require('../models/Brand');
 const { protect } = require('../middleware/auth');
-const { uploadBrand, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
+const { uploadBrand, uploadFile, deleteFile } = require('../config/storage');
 
 const router = express.Router();
 
@@ -34,7 +34,7 @@ router.post('/', protect, uploadBrand.single('logo'), async (req, res) => {
 
     const { name, altText, order } = req.body;
 
-    const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/brands');
+    const { url, fileId } = await uploadFile(req.file, 'dod-healthcare/brands');
 
     const brand = await Brand.create({
       name,
@@ -65,8 +65,8 @@ router.put('/:id', protect, uploadBrand.single('logo'), async (req, res) => {
 
     // If new image uploaded, delete old one from ImageKit
     if (req.file) {
-      await deleteFromImageKit(brand.imagekitFileId);
-      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/brands');
+      await deleteFile(brand.imagekitFileId);
+      const { url, fileId } = await uploadFile(req.file, 'dod-healthcare/brands');
       brand.logoUrl = url;
       brand.imagekitFileId = fileId;
     }
@@ -84,7 +84,7 @@ router.delete('/:id', protect, async (req, res) => {
     const brand = await Brand.findById(req.params.id);
     if (!brand) return res.status(404).json({ success: false, message: 'Brand not found' });
 
-    await deleteFromImageKit(brand.imagekitFileId);
+    await deleteFile(brand.imagekitFileId);
     await brand.deleteOne();
 
     res.json({ success: true, message: 'Brand deleted successfully' });

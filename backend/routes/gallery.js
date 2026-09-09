@@ -1,7 +1,7 @@
 const express = require('express');
 const GalleryImage = require('../models/GalleryImage');
 const { protect } = require('../middleware/auth');
-const { uploadGallery, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
+const { uploadGallery, uploadFile, deleteFile } = require('../config/storage');
 
 const router = express.Router();
 
@@ -34,7 +34,7 @@ router.post('/', protect, uploadGallery.single('image'), async (req, res) => {
     const { title, caption, order } = req.body;
     if (!title) return res.status(400).json({ success: false, message: 'Title is required' });
 
-    const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/gallery');
+    const { url, fileId } = await uploadFile(req.file, 'dod-healthcare/gallery');
 
     const img = await GalleryImage.create({
       title,
@@ -62,8 +62,8 @@ router.put('/:id', protect, uploadGallery.single('image'), async (req, res) => {
     if (isActive !== undefined) img.isActive = isActive === 'true' || isActive === true;
 
     if (req.file) {
-      await deleteFromImageKit(img.imagekitFileId);
-      const { url, fileId } = await uploadToImageKit(req.file, 'dod-healthcare/gallery');
+      await deleteFile(img.imagekitFileId);
+      const { url, fileId } = await uploadFile(req.file, 'dod-healthcare/gallery');
       img.imageUrl = url;
       img.imagekitFileId = fileId;
     }
@@ -81,7 +81,7 @@ router.delete('/:id', protect, async (req, res) => {
     const img = await GalleryImage.findById(req.params.id);
     if (!img) return res.status(404).json({ success: false, message: 'Image not found' });
 
-    await deleteFromImageKit(img.imagekitFileId);
+    await deleteFile(img.imagekitFileId);
     await img.deleteOne();
     res.json({ success: true, message: 'Image deleted successfully' });
   } catch (err) {

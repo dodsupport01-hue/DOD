@@ -1,7 +1,7 @@
 const express = require('express');
 const Review = require('../models/Review');
 const { protect } = require('../middleware/auth');
-const { uploadReview, uploadToImageKit, deleteFromImageKit } = require('../config/imagekit');
+const { uploadReview, uploadFile, deleteFile } = require('../config/storage');
 
 const router = express.Router();
 
@@ -45,9 +45,9 @@ router.post('/', protect, uploadFields, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Customer name is required' });
     }
 
-    const video = await uploadToImageKit(videoFile, 'dod-healthcare/reviews');
+    const video = await uploadFile(videoFile, 'dod-healthcare/reviews');
     const poster = posterFile
-      ? await uploadToImageKit(posterFile, 'dod-healthcare/reviews/posters')
+      ? await uploadFile(posterFile, 'dod-healthcare/reviews/posters')
       : null;
 
     const review = await Review.create({
@@ -85,14 +85,14 @@ router.put('/:id', protect, uploadFields, async (req, res) => {
     const posterFile = req.files && req.files.poster && req.files.poster[0];
 
     if (videoFile) {
-      await deleteFromImageKit(review.imagekitFileId);
-      const video = await uploadToImageKit(videoFile, 'dod-healthcare/reviews');
+      await deleteFile(review.imagekitFileId);
+      const video = await uploadFile(videoFile, 'dod-healthcare/reviews');
       review.videoUrl = video.url;
       review.imagekitFileId = video.fileId;
     }
     if (posterFile) {
-      await deleteFromImageKit(review.thumbnailFileId);
-      const poster = await uploadToImageKit(posterFile, 'dod-healthcare/reviews/posters');
+      await deleteFile(review.thumbnailFileId);
+      const poster = await uploadFile(posterFile, 'dod-healthcare/reviews/posters');
       review.thumbnailUrl = poster.url;
       review.thumbnailFileId = poster.fileId;
     }
@@ -110,8 +110,8 @@ router.delete('/:id', protect, async (req, res) => {
     const review = await Review.findById(req.params.id);
     if (!review) return res.status(404).json({ success: false, message: 'Review not found' });
 
-    await deleteFromImageKit(review.imagekitFileId);
-    await deleteFromImageKit(review.thumbnailFileId);
+    await deleteFile(review.imagekitFileId);
+    await deleteFile(review.thumbnailFileId);
     await review.deleteOne();
     res.json({ success: true, message: 'Review deleted successfully' });
   } catch (err) {

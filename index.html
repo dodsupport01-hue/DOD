@@ -127,6 +127,256 @@
              rebuild this with:  node build-css.js -->
         <link rel="stylesheet" href="styles.min.css" />
         <link rel="preconnect" href="https://dod-healthcare-api.onrender.com" crossorigin />
+        <link rel="preconnect" href="https://ik.imagekit.io" crossorigin />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+
+        <!-- ================ MEDIA + API RUNTIME ================
+             Shared by every section below. Defined here, before any of them, so
+             an inline section script can call it while the page is still
+             parsing. Three jobs:
+
+               1. Ask the image CDN for pictures at the size they are drawn,
+                  in the format the browser prefers, instead of the multi-MB
+                  phone-camera originals the admin panel uploads.
+               2. Show a still frame for a video without downloading any video.
+               3. Serve API responses from the last visit immediately, so the
+                  page is never blank while a sleeping backend wakes up.
+
+             Every transformed URL keeps the original as an onerror fallback,
+             so nothing here can take a picture off the page. -->
+        <script>
+            window.DOD = (function () {
+                "use strict";
+
+                // The R2 bucket's custom domain. Media moves here once
+                // backend/scripts/migrate-to-r2.js has run; until then nothing
+                // matches this and the ImageKit branch does the work.
+                var CDN = "https://cdn.dodsmarthealth.com";
+
+                function isIK(u) { return typeof u === "string" && u.indexOf("ik.imagekit.io") > -1; }
+                function isCL(u) { return typeof u === "string" && u.indexOf("res.cloudinary.com") > -1; }
+                function isR2(u) { return typeof u === "string" && u.indexOf(CDN) === 0; }
+
+                // An 8 MP photo shown in a 400 px card is ~40x more bytes than
+                // the screen can use. Both providers are asked for the drawn
+                // size, in the best format the browser accepts, at a quality
+                // chosen per image.
+                function img(url, w) {
+                    w = w || 800;
+                    if (isR2(url)) {
+                        // Cloudflare Image Transformations. Already-transformed
+                        // URLs carry the /cdn-cgi/image/ prefix.
+                        if (url.indexOf("/cdn-cgi/image/") > -1) return url;
+                        return CDN + "/cdn-cgi/image/width=" + w + ",format=auto,quality=auto,fit=scale-down" + url.slice(CDN.length);
+                    }
+                    if (!isIK(url) || /[?&]tr=|\/tr:/.test(url)) return url;
+                    return url + (url.indexOf("?") > -1 ? "&" : "?") + "tr=f-auto,q-auto,w-" + w;
+                }
+
+                // Retina + small-screen variants of the same picture.
+                function srcset(url, widths) {
+                    if (!isIK(url) && !isR2(url)) return "";
+                    return widths
+                        .map(function (w) { return img(url, w) + " " + w + "w"; })
+                        .join(", ");
+                }
+
+                // A poster frame cut from the video by the CDN. A grid of these
+                // costs a few KB of JPEG each; the <video> elements they replace
+                // cost a connection and a metadata range-request apiece.
+                function poster(url, w) {
+                    w = w || 640;
+                    if (isIK(url)) return url + "/ik-thumbnail.jpg?tr=f-auto,q-auto,w-" + w;
+                    if (isCL(url)) {
+                        return url
+                            .replace("/upload/", "/upload/so_0,f_auto,q_auto,w_" + w + "/")
+                            .replace(/\.(mp4|webm|mov|avi)$/i, ".jpg");
+                    }
+                    // R2 is plain object storage — it cannot cut a frame out of
+                    // a video. Once media lives there, upload a poster image
+                    // alongside each clip (the admin panel's review form already
+                    // takes one) and it is used automatically.
+                    return "";
+                }
+
+                // ── API cache ───────────────────────────────────────────────
+                // The API is a free Render instance: it sleeps after 15 minutes
+                // of no traffic and can take the better part of a minute to
+                // answer the request that wakes it. Until now that was a minute
+                // of empty grids on the first visit of the morning. A returning
+                // visitor now paints last-known content immediately while the
+                // fresh copy is fetched behind it.
+                var TTL = 10 * 60 * 1000;
+                var NS = "dod:v1:";
+
+                function readCache(key) {
+                    try {
+                        var raw = localStorage.getItem(NS + key);
+                        if (!raw) return null;
+                        var rec = JSON.parse(raw);
+                        return rec && rec.t && Date.now() - rec.t < TTL ? rec.d : null;
+                    } catch (e) { return null; }
+                }
+                function writeCache(key, data) {
+                    try {
+                        localStorage.setItem(NS + key, JSON.stringify({ t: Date.now(), d: data }));
+                    } catch (e) {
+                        // Quota full or private mode — caching is an optimisation,
+                        // never a requirement.
+                        try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf(NS) === 0) localStorage.removeItem(k); }); } catch (e2) {}
+                    }
+                }
+
+                var inflight = {};
+
+                function fetchJSON(url) {
+                    var hit = readCache(url);
+                    if (hit) {
+                        // Refresh in the background for the *next* load; the
+                        // caller gets the cached copy now.
+                        revalidate(url);
+                        return Promise.resolve(hit);
+                    }
+                    return network(url);
+                }
+
+                function network(url) {
+                    if (inflight[url]) return inflight[url];
+                    var p = fetch(url, { credentials: "omit" })
+                        .then(function (r) {
+                            if (!r.ok) throw new Error("HTTP " + r.status);
+                            return r.json();
+                        })
+                        .then(function (json) {
+                            writeCache(url, json);
+                            delete inflight[url];
+                            return json;
+                        })
+                        .catch(function (err) {
+                            delete inflight[url];
+                            throw err;
+                        });
+                    inflight[url] = p;
+                    return p;
+                }
+
+                function revalidate(url) {
+                    if (inflight[url]) return;
+                    network(url).catch(function () {});
+                }
+
+                // ── autoplay when scrolled into view ────────────────────────
+                // Muted + playsinline are what make autoplay permitted at all on
+                // iOS and Android; without both, play() is rejected. Playback is
+                // tied to visibility so nothing decodes off-screen, and a clip
+                // the visitor paused by hand is left alone.
+                var saveData = !!(navigator.connection && navigator.connection.saveData);
+
+                function autoplayInView(video, onChange) {
+                    if (!video || saveData || !("IntersectionObserver" in window)) return;
+                    video.muted = true;
+                    video.setAttribute("muted", "");
+                    video.playsInline = true;
+                    video.setAttribute("playsinline", "");
+
+                    var manuallyPaused = false;
+                    video.addEventListener("pause", function () {
+                        if (!video.ended && document.visibilityState === "visible" && video.dataset.inview === "1") manuallyPaused = true;
+                    });
+                    video.addEventListener("play", function () { manuallyPaused = false; });
+
+                    new IntersectionObserver(
+                        function (entries) {
+                            entries.forEach(function (en) {
+                                var vis = en.isIntersecting && en.intersectionRatio >= 0.4;
+                                video.dataset.inview = vis ? "1" : "0";
+                                if (vis && !manuallyPaused) {
+                                    var p = video.play();
+                                    if (p && p.catch) p.catch(function () {});
+                                    if (onChange) onChange(true);
+                                } else if (!vis) {
+                                    video.pause();
+                                    if (onChange) onChange(false);
+                                }
+                            });
+                        },
+                        { threshold: [0, 0.4, 0.75] }
+                    ).observe(video);
+
+                    // A backgrounded tab should not keep decoding frames.
+                    document.addEventListener("visibilitychange", function () {
+                        if (document.hidden) video.pause();
+                        else if (video.dataset.inview === "1" && !manuallyPaused) {
+                            var p = video.play();
+                            if (p && p.catch) p.catch(function () {});
+                        }
+                    });
+                }
+
+                // ── YouTube facade ──────────────────────────────────────────
+                // Every embedded player pulls roughly a megabyte of YouTube's
+                // own JavaScript and opens connections to four hosts, whether or
+                // not anyone presses play. This section had seven of them. A
+                // thumbnail plus a play button looks identical and costs ~15 KB;
+                // the real player is built on the first click.
+                function ytId(url) {
+                    if (!url) return "";
+                    var m = String(url).match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/)([\w-]{6,})/);
+                    return m ? m[1] : "";
+                }
+
+                function ytFacade(id, title) {
+                    if (!id) return "";
+                    var t = String(title || "Video").replace(/"/g, "&quot;");
+                    return (
+                        '<button type="button" class="yt-facade" data-yt="' + id + '" aria-label="Play video: ' + t + '">' +
+                        '<img src="https://i.ytimg.com/vi/' + id + '/maxresdefault.jpg" alt="" loading="lazy" decoding="async" ' +
+                        "onerror=\"this.onerror=null;this.src='https://i.ytimg.com/vi/" + id + "/hqdefault.jpg'\">" +
+                        '<span class="yt-facade-play" aria-hidden="true"><svg viewBox="0 0 68 48"><path class="yt-p1" d="M66.5 7.7a8 8 0 0 0-5.6-5.7C56 .7 34 .7 34 .7s-22 0-26.9 1.3a8 8 0 0 0-5.6 5.7A83 83 0 0 0 .3 24a83 83 0 0 0 1.2 16.3 8 8 0 0 0 5.6 5.7C12 47.3 34 47.3 34 47.3s22 0 26.9-1.3a8 8 0 0 0 5.6-5.7A83 83 0 0 0 67.7 24a83 83 0 0 0-1.2-16.3z"/><path d="M27 34.2 45.2 24 27 13.8z" fill="#fff"/></svg></span>' +
+                        "</button>"
+                    );
+                }
+
+                // One listener for the whole document, so facades added later by
+                // the API are covered without rebinding anything.
+                document.addEventListener("click", function (e) {
+                    var btn = e.target.closest && e.target.closest(".yt-facade");
+                    if (!btn) return;
+                    var id = btn.dataset.yt;
+                    if (!id) return;
+                    var f = document.createElement("iframe");
+                    f.src = "https://www.youtube.com/embed/" + id + "?autoplay=1&rel=0&playsinline=1";
+                    f.title = btn.getAttribute("aria-label") || "Video";
+                    f.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+                    f.setAttribute("allowfullscreen", "");
+                    btn.replaceWith(f);
+                });
+
+                return {
+                    img: img,
+                    srcset: srcset,
+                    poster: poster,
+                    fetchJSON: fetchJSON,
+                    // Lower-level cache access, for callers that run their own
+                    // retry loop against the sleeping backend.
+                    peek: readCache,
+                    put: writeCache,
+                    refresh: revalidate,
+                    autoplayInView: autoplayInView,
+                    saveData: saveData,
+                    ytId: ytId,
+                    ytFacade: ytFacade,
+                };
+            })();
+
+            // Wake the sleeping API now rather than when the first section is
+            // parsed — the dyno spin-up overlaps the rest of the page load.
+            (function () {
+                var h = location.hostname;
+                if (h.indexOf("localhost") > -1 || h.indexOf("127.0.0.1") > -1) return;
+                try { fetch("https://dod-healthcare-api.onrender.com/api/health", { mode: "no-cors", credentials: "omit" }); } catch (e) {}
+            })();
+        </script>
 
         <!-- Scroll-reveal (AOS) is wired up here, NOT in the deferred script.js.
              script.js loads at the end of <body> behind other scripts, so on a
@@ -1848,18 +2098,14 @@
                     var fsBtn = wrap.querySelector('.lv-fs-btn');
                     if (!video) return;
 
-                    // Hover -> play muted & looping. Leave -> pause and show hint again.
-                    wrap.addEventListener('mouseenter', function(){
-                        video.muted = true;
-                        var p = video.play();
-                        if (p && p.catch) p.catch(function(){});
-                        wrap.classList.add('is-playing');
-                    });
-                    wrap.addEventListener('mouseleave', function(){
-                        if (document.fullscreenElement === video) return;
-                        video.pause();
-                        wrap.classList.remove('is-playing');
-                    });
+                    // Playback follows visibility on every device, so the clips
+                    // start on their own when the section is scrolled to — on a
+                    // phone as well as a desktop, where hover does not exist.
+                    // Muted + playsinline is what makes that permitted at all.
+                    DOD.autoplayInView(video);
+                    video.addEventListener('play',  function(){ wrap.classList.add('is-playing'); });
+                    video.addEventListener('pause', function(){ wrap.classList.remove('is-playing'); });
+
                     // Click video (not the FS button) -> fullscreen
                     wrap.addEventListener('click', function(e){
                         if (fsBtn && fsBtn.contains(e.target)) return;
@@ -1877,8 +2123,7 @@
                     }
                 }
 
-                fetch(API + '/local-videos')
-                    .then(function(r){ return r.json(); })
+                DOD.fetchJSON(API + '/local-videos')
                     .then(function(resp){
                         var grid = document.getElementById('localVideosGrid');
                         if (!resp.success || !resp.data || !resp.data.length) {
@@ -1887,8 +2132,13 @@
                         grid.innerHTML = resp.data.map(function(v){
                             return '<div class="lv-card">' +
                                 '<div class="lv-video-wrap">' +
+                                    // A poster means the card shows its picture immediately
+                                    // and the browser never has to pull video bytes just to
+                                    // put something on screen.
+                                    // An empty poster="" would resolve to the page URL and
+                                    // fire a junk request, so omit it when there is none.
                                     '<video loop muted playsinline preload="none"' +
-                                    (v.thumbnailUrl ? ' poster="' + v.thumbnailUrl + '"' : '') +
+                                    (function(p){ return p ? ' poster="' + p + '"' : ''; })(v.thumbnailUrl || DOD.poster(v.videoUrl, 720)) +
                                     ' aria-label="' + (v.title || 'DOD Video') + '">' +
                                         '<source data-src="' + v.videoUrl + '" type="video/mp4" />' +
                                     '</video>' +
@@ -2297,7 +2547,9 @@
                     const staticCells = [];
                     document.querySelectorAll(".dg-cell").forEach((cell) => {
                         const img = cell.querySelector("img");
-                        if (img) staticCells.push({ src: img.src, cap: cell.querySelector(".dg-caption")?.textContent || "" });
+                        // src identifies the cell; full is the larger copy the
+                        // lightbox shows, since the grid only loads thumbnails.
+                        if (img) staticCells.push({ src: img.src, full: img.dataset.full || img.src, cap: cell.querySelector(".dg-caption")?.textContent || "" });
                     });
                     // _dgCells is replaced by loadGalleryFromAPI() after API loads; fallback to staticCells
                     if (!window._dgCells) window._dgCells = staticCells;
@@ -2326,7 +2578,7 @@
                     function dgShowLb() {
                         const cells = getCells();
                         if (!cells.length) return;
-                        document.getElementById("dgLbImg").src = cells[cur].src;
+                        document.getElementById("dgLbImg").src = cells[cur].full || cells[cur].src;
                         document.getElementById("dgLbCaption").textContent = cells[cur].cap;
                         document.getElementById("dgLb").classList.add("open");
                     }
@@ -2347,14 +2599,10 @@
                 .pr-section {
                     position: relative;
                     overflow: hidden;
-                    /* the contact strip is full-bleed and sits flush on the
-                       bottom edge, so the section carries no side/bottom padding */
-                    padding-left: 0;
-                    padding-right: 0;
-                    padding-bottom: 0;
+                    padding: 4.5rem 0 4rem;
                     background: linear-gradient(155deg, #f6fafd 0%, #e9f2fb 100%);
                 }
-                /* the two dotted corner patterns from the layout */
+                /* dotted corner patterns */
                 .pr-section::before,
                 .pr-section::after {
                     content: "";
@@ -2383,19 +2631,11 @@
                     padding: 0 2rem;
                     box-sizing: border-box;
                 }
-                .pr-stage {
-                    display: grid;
-                    grid-template-columns: minmax(220px, 1fr) minmax(0, 1.7fr) minmax(215px, 0.95fr);
-                    gap: 1.5rem;
-                    align-items: start;
-                }
 
-                /* ── left column ── */
-                .pr-logo {
-                    display: block;
-                    width: 148px;
-                    height: auto;
-                    margin-bottom: 2rem;
+                /* ── heading ── */
+                .pr-head {
+                    max-width: 640px;
+                    margin-bottom: 2.25rem;
                 }
                 .pr-eyebrow {
                     display: flex;
@@ -2416,139 +2656,470 @@
                     opacity: 0.9;
                 }
                 .pr-headline {
-                    font-size: clamp(1.6rem, 2.7vw, 2.45rem);
+                    font-size: clamp(1.6rem, 3.2vw, 2.5rem);
                     font-weight: 800;
                     color: #10314f;
-                    line-height: 1.22;
+                    line-height: 1.2;
                     letter-spacing: -0.01em;
-                    margin: 0 0 1.1rem;
+                    margin: 0 0 0.9rem;
                 }
                 .pr-headline em {
                     font-style: normal;
                     color: #1273cf;
                 }
                 .pr-sub {
-                    font-size: 0.95rem;
+                    font-size: 0.98rem;
                     line-height: 1.7;
                     color: #5a6b7d;
                     margin: 0;
-                    max-width: 34ch;
                 }
 
-                /* ── map + pins ── */
+                /* ── stage: map + side panel ── */
+                .pr-stage {
+                    display: grid;
+                    grid-template-columns: minmax(0, 1.45fr) minmax(290px, 0.85fr);
+                    gap: 2rem;
+                    align-items: start;
+                }
+
+                /* ── map panel ── */
+                .pr-mapwrap {
+                    position: relative;
+                    border-radius: 26px;
+                    padding: 1rem 1rem 0.5rem;
+                    background: linear-gradient(165deg, rgba(255, 255, 255, 0.92) 0%, rgba(233, 243, 253, 0.6) 100%);
+                    border: 1px solid rgba(255, 255, 255, 0.9);
+                    box-shadow: 0 24px 60px -30px rgba(13, 55, 97, 0.45), 0 2px 10px rgba(13, 55, 97, 0.05);
+                    overflow: hidden;
+                }
+                /* faint graph paper + a glow behind the landmass */
+                .pr-mapwrap::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    background-image: linear-gradient(rgba(18, 115, 207, 0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(18, 115, 207, 0.055) 1px, transparent 1px);
+                    background-size: 34px 34px;
+                    -webkit-mask-image: radial-gradient(ellipse at 50% 45%, #000 30%, transparent 78%);
+                    mask-image: radial-gradient(ellipse at 50% 45%, #000 30%, transparent 78%);
+                    pointer-events: none;
+                }
+                .pr-mapwrap::after {
+                    content: "";
+                    position: absolute;
+                    left: 50%;
+                    top: 46%;
+                    width: 74%;
+                    aspect-ratio: 1;
+                    transform: translate(-50%, -50%);
+                    background: radial-gradient(circle, rgba(50, 150, 233, 0.22) 0%, rgba(50, 150, 233, 0) 68%);
+                    pointer-events: none;
+                }
+
                 .pr-map {
                     position: relative;
+                    z-index: 1;
                     width: 100%;
-                    /* India is taller than it is wide, so an unconstrained map
-                       would tower over the copy beside it */
-                    max-width: 620px;
+                    max-width: 560px;
                     margin: 0 auto;
+                    /* the SVG is 2000x2349 — reserving the box stops layout shift */
+                    aspect-ratio: 2000 / 2349;
                 }
                 .pr-map-img {
                     display: block;
                     width: 100%;
-                    height: auto;
+                    height: 100%;
+                    object-fit: contain;
+                    filter: drop-shadow(0 18px 26px rgba(13, 60, 110, 0.18));
                 }
-                /* --x / --y are the map coordinates of the pin tip, in % of the
-                   map image box. Nudge those two numbers to move a pin. */
+
+                /* ── pins ─────────────────────────────────────────────────────
+                   --x / --y are the coordinates of the kiosk's base, in % of the
+                   map box. The button is a zero-size anchor point; everything is
+                   drawn around it, so the machine stands on its city. */
                 .pr-pin {
                     position: absolute;
                     left: var(--x);
                     top: var(--y);
                     width: 0;
                     height: 0;
+                    /* --mw is the kiosk's drawn width; --mh follows from the
+                       132x279 artwork and is what the name tag clears */
+                    --mw: 34px;
+                    --mh: calc(var(--mw) * 279 / 132);
+                    padding: 0;
+                    border: 0;
+                    background: none;
+                    cursor: pointer;
+                    color: inherit;
+                    font: inherit;
+                    -webkit-tap-highlight-color: transparent;
                 }
-                /* The marker is the kiosk itself, standing on its location.
-                   Its base sits on --x/--y, so the machine "stands" on the city. */
-                .pr-pin .pr-mark {
-                    position: absolute;
-                    left: -15px;
-                    bottom: 0;
-                    width: 30px;
-                    height: auto;
-                    display: block;
-                    filter: drop-shadow(0 4px 6px rgba(12, 42, 74, 0.3));
-                }
-                .pr-line {
-                    position: absolute;
-                    top: -34px;
-                    width: var(--len, 84px);
-                    border-top: 1px dashed #9db4cb;
-                }
-                .pr-line::after {
+                /* invisible 46px hit target — comfortable on a phone */
+                .pr-pin::before {
                     content: "";
                     position: absolute;
-                    top: -4px;
+                    left: 50%;
+                    bottom: 0;
+                    width: 46px;
+                    height: 52px;
+                    transform: translateX(-50%);
+                }
+                .pr-pin:focus {
+                    outline: none;
+                }
+                .pr-pin:focus-visible .pr-mark {
+                    outline: 3px solid #1273cf;
+                    outline-offset: 3px;
+                    border-radius: 4px;
+                }
+
+                /* ground contact: a soft ellipse so the kiosk sits on the land */
+                .pr-pin-shadow {
+                    position: absolute;
+                    left: 50%;
+                    bottom: -3px;
+                    width: 30px;
+                    height: 9px;
+                    transform: translateX(-50%);
+                    border-radius: 50%;
+                    background: radial-gradient(ellipse, rgba(9, 40, 74, 0.45) 0%, rgba(9, 40, 74, 0) 70%);
+                    transition: width 0.25s ease, opacity 0.25s ease;
+                }
+                /* radar ping on the exact coordinate */
+                .pr-pin-ring,
+                .pr-pin-ring::after {
+                    position: absolute;
+                    left: 50%;
+                    bottom: 0;
+                    width: 16px;
+                    height: 16px;
+                    margin-left: -8px;
+                    margin-bottom: -8px;
+                    border-radius: 50%;
+                    box-sizing: border-box;
+                }
+                .pr-pin-ring {
+                    border: 2px solid rgba(18, 115, 207, 0.85);
+                    background: rgba(18, 115, 207, 0.16);
+                    animation: pr-ping 2.6s ease-out infinite;
+                    animation-delay: var(--d, 0s);
+                }
+                .pr-pin-ring::after {
+                    content: "";
+                    border: 2px solid rgba(18, 115, 207, 0.5);
+                    animation: pr-ping 2.6s ease-out infinite;
+                    animation-delay: calc(var(--d, 0s) + 0.9s);
+                }
+                @keyframes pr-ping {
+                    0% {
+                        transform: scale(0.5);
+                        opacity: 0.9;
+                    }
+                    70% {
+                        transform: scale(2.6);
+                        opacity: 0;
+                    }
+                    100% {
+                        transform: scale(2.6);
+                        opacity: 0;
+                    }
+                }
+
+                /* the kiosk itself is the marker */
+                .pr-mark {
+                    position: absolute;
+                    left: 50%;
+                    bottom: 2px;
+                    width: var(--mw);
+                    /* the global `img { max-width: 100% }` resolves against the
+                       zero-width pin and would collapse the kiosk to nothing */
+                    max-width: none;
+                    height: auto;
+                    display: block;
+                    transform: translateX(-50%);
+                    transform-origin: 50% 100%;
+                    filter: drop-shadow(0 5px 7px rgba(12, 42, 74, 0.35));
+                    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.28s ease;
+                }
+                .pr-pin:hover .pr-mark,
+                .pr-pin.is-active .pr-mark {
+                    transform: translateX(-50%) scale(1.28) translateY(-2px);
+                    filter: drop-shadow(0 10px 14px rgba(12, 42, 74, 0.45));
+                }
+                .pr-pin:hover .pr-pin-shadow,
+                .pr-pin.is-active .pr-pin-shadow {
+                    width: 40px;
+                    opacity: 0.85;
+                }
+                .pr-pin.is-active {
+                    z-index: 6;
+                }
+                .pr-pin.is-active .pr-pin-ring {
+                    border-color: #0b5cad;
+                    background: rgba(11, 92, 173, 0.24);
+                }
+
+                /* floating name tag above the kiosk */
+                .pr-tip {
+                    position: absolute;
+                    left: 50%;
+                    /* clear the kiosk, including the lift it gets when active */
+                    bottom: calc(var(--mh) + 10px);
+                    transform: translate(-50%, 6px);
+                    display: block;
+                    white-space: nowrap;
+                    background: #fff;
+                    border: 1px solid #dbe8f6;
+                    border-radius: 10px;
+                    padding: 0.35rem 0.6rem;
+                    box-shadow: 0 10px 24px -10px rgba(11, 52, 94, 0.5);
+                    opacity: 0;
+                    visibility: hidden;
+                    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+                    pointer-events: none;
+                }
+                .pr-tip::after {
+                    content: "";
+                    position: absolute;
+                    left: 50%;
+                    top: 100%;
+                    width: 8px;
+                    height: 8px;
+                    margin-left: -4px;
+                    margin-top: -4px;
+                    background: #fff;
+                    border-right: 1px solid #dbe8f6;
+                    border-bottom: 1px solid #dbe8f6;
+                    transform: rotate(45deg);
+                }
+                .pr-pin:hover .pr-tip,
+                .pr-pin:focus-visible .pr-tip,
+                .pr-pin.is-active .pr-tip {
+                    opacity: 1;
+                    visibility: visible;
+                    transform: translate(-50%, 0);
+                }
+                .pr-tip b {
+                    display: block;
+                    font-size: 0.7rem;
+                    font-weight: 800;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    color: #1268bd;
+                    line-height: 1.25;
+                }
+                .pr-tip i {
+                    display: block;
+                    font-style: normal;
+                    font-size: 0.74rem;
+                    color: #4a5d70;
+                    line-height: 1.3;
+                }
+
+                /* entrance: kiosks drop onto the map, one after another */
+                .pr-has-pins .pr-pin {
+                    animation: pr-drop 0.55s cubic-bezier(0.2, 0.85, 0.3, 1.15) backwards;
+                    animation-delay: var(--d, 0s);
+                }
+                @keyframes pr-drop {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-16px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+
+                .pr-hint {
+                    position: relative;
+                    z-index: 1;
+                    text-align: center;
+                    font-size: 0.76rem;
+                    color: #6f8296;
+                    padding: 0.55rem 0 0.35rem;
+                }
+                .pr-hint svg {
+                    width: 13px;
+                    height: 13px;
+                    vertical-align: -2px;
+                    margin-right: 4px;
+                    stroke: currentColor;
+                    fill: none;
+                    stroke-width: 2;
+                }
+
+                /* ── side panel ── */
+                .pr-side {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+
+                /* selected-location card */
+                .pr-card {
+                    position: relative;
+                    border-radius: 20px;
+                    padding: 1.15rem 1.25rem;
+                    background: linear-gradient(160deg, #12467c 0%, #0d3260 100%);
+                    color: #fff;
+                    box-shadow: 0 20px 44px -24px rgba(10, 44, 82, 0.85);
+                    overflow: hidden;
+                }
+                .pr-card::after {
+                    content: "";
+                    position: absolute;
+                    right: -40px;
+                    top: -40px;
+                    width: 150px;
+                    height: 150px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, rgba(88, 178, 255, 0.34) 0%, rgba(88, 178, 255, 0) 70%);
+                }
+                .pr-card-top {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.85rem;
+                    position: relative;
+                    z-index: 1;
+                }
+                .pr-card-img {
+                    flex: 0 0 auto;
+                    width: 40px;
+                    height: 84px;
+                    object-fit: contain;
+                    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+                }
+                .pr-card-live {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                    font-size: 0.62rem;
+                    font-weight: 800;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #8ff0c4;
+                    margin-bottom: 0.35rem;
+                }
+                .pr-card-live::before {
+                    content: "";
                     width: 7px;
                     height: 7px;
                     border-radius: 50%;
-                    background: #0f3f6e;
+                    background: #35d68f;
+                    box-shadow: 0 0 0 0 rgba(53, 214, 143, 0.7);
+                    animation: pr-live 2s ease-out infinite;
                 }
-                .pr-pin--right .pr-line {
-                    left: 11px;
+                @keyframes pr-live {
+                    70% {
+                        box-shadow: 0 0 0 8px rgba(53, 214, 143, 0);
+                    }
+                    100% {
+                        box-shadow: 0 0 0 0 rgba(53, 214, 143, 0);
+                    }
                 }
-                .pr-pin--right .pr-line::after {
-                    right: -7px;
-                }
-                .pr-pin--left .pr-line {
-                    right: 11px;
-                }
-                .pr-pin--left .pr-line::after {
-                    left: -7px;
-                }
-                .pr-label {
-                    position: absolute;
-                    top: -34px;
-                    transform: translateY(-50%);
-                    white-space: nowrap;
-                    line-height: 1.3;
-                }
-                .pr-pin--right .pr-label {
-                    left: calc(11px + var(--len, 84px) + 15px);
-                    text-align: left;
-                }
-                .pr-pin--left .pr-label {
-                    right: calc(11px + var(--len, 84px) + 15px);
-                    text-align: right;
-                }
-                .pr-label b {
-                    display: block;
-                    font-size: 0.78rem;
+                .pr-card h3 {
+                    margin: 0 0 0.2rem;
+                    font-size: 1.18rem;
                     font-weight: 800;
-                    letter-spacing: 0.06em;
-                    text-transform: uppercase;
-                    color: #1268bd;
+                    line-height: 1.2;
+                    letter-spacing: -0.01em;
                 }
-                .pr-label i {
-                    display: block;
-                    font-style: normal;
-                    font-size: 0.82rem;
-                    color: #33475b;
-                    margin-top: 3px;
+                .pr-card-cities {
+                    margin: 0;
+                    font-size: 0.85rem;
+                    line-height: 1.5;
+                    color: #bcd6ee;
+                }
+                .pr-card-tags {
+                    position: relative;
+                    z-index: 1;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.4rem;
+                    margin-top: 0.9rem;
+                    padding-top: 0.9rem;
+                    border-top: 1px solid rgba(255, 255, 255, 0.14);
+                }
+                .pr-card-tags span {
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    color: #dbeaf9;
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 999px;
+                    padding: 0.28rem 0.6rem;
                 }
 
-                /* ── feature column, right of the map ── */
+                /* state chips — the primary control on a phone */
+                .pr-rail {
+                    list-style: none;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 0.45rem;
+                }
+                .pr-chip {
+                    appearance: none;
+                    font: inherit;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.45rem;
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    color: #2a465f;
+                    background: #fff;
+                    border: 1px solid #dbe7f4;
+                    border-radius: 999px;
+                    padding: 0.42rem 0.85rem;
+                    white-space: nowrap;
+                    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+                }
+                .pr-chip::before {
+                    content: "";
+                    width: 6px;
+                    height: 6px;
+                    border-radius: 50%;
+                    background: #9dbdda;
+                    transition: background 0.2s ease;
+                }
+                .pr-chip:hover {
+                    border-color: #9fc7ee;
+                    transform: translateY(-1px);
+                }
+                .pr-chip.is-active {
+                    background: #1273cf;
+                    border-color: #1273cf;
+                    color: #fff;
+                }
+                .pr-chip.is-active::before {
+                    background: #8ff0c4;
+                }
+
+                /* ── feature list ── */
                 .pr-feats {
                     list-style: none;
                     margin: 0;
                     padding: 0;
                     display: flex;
                     flex-direction: column;
-                    gap: 0.85rem;
+                    gap: 0.6rem;
                 }
                 .pr-feats li {
                     display: flex;
                     align-items: flex-start;
                     gap: 0.8rem;
-                    background: rgba(255, 255, 255, 0.72);
+                    background: rgba(255, 255, 255, 0.78);
                     border: 1px solid #dde8f4;
                     border-radius: 14px;
-                    padding: 0.9rem 1rem;
+                    padding: 0.8rem 0.95rem;
                 }
                 .pr-feat-ico {
                     flex: 0 0 auto;
-                    width: 38px;
-                    height: 38px;
+                    width: 36px;
+                    height: 36px;
                     border-radius: 11px;
                     background: #e8f1fb;
                     color: #1273cf;
@@ -2556,28 +3127,59 @@
                     place-items: center;
                 }
                 .pr-feat-ico svg {
-                    width: 19px;
-                    height: 19px;
+                    width: 18px;
+                    height: 18px;
                 }
                 .pr-feats strong {
                     display: block;
-                    font-size: 0.9rem;
+                    font-size: 0.88rem;
                     font-weight: 700;
                     color: #12314e;
-                    margin-bottom: 0.15rem;
+                    margin-bottom: 0.12rem;
                 }
                 .pr-feats div span {
                     display: block;
-                    font-size: 0.79rem;
+                    font-size: 0.78rem;
                     line-height: 1.5;
                     color: #5a6b7d;
                 }
 
-                /* ── location list: the source of truth for the pins, and the
-                      layout used on phones or when the map image is absent ── */
+                /* ── stats strip ── */
+                .pr-stats {
+                    list-style: none;
+                    margin: 1.75rem 0 0;
+                    padding: 1.15rem 1rem;
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 1rem;
+                    background: rgba(255, 255, 255, 0.72);
+                    border: 1px solid #dde8f4;
+                    border-radius: 18px;
+                    text-align: center;
+                }
+                .pr-stats b {
+                    display: block;
+                    font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+                    font-weight: 800;
+                    color: #1273cf;
+                    line-height: 1.1;
+                    letter-spacing: -0.02em;
+                }
+                .pr-stats span {
+                    display: block;
+                    font-size: 0.72rem;
+                    font-weight: 600;
+                    letter-spacing: 0.09em;
+                    text-transform: uppercase;
+                    color: #6b7f93;
+                    margin-top: 0.3rem;
+                }
+
+                /* ── data list: source of truth for the pins, and the fallback
+                      layout if the map image ever fails to load ── */
                 .pr-list {
                     list-style: none;
-                    margin: 2rem 0 0;
+                    margin: 1.75rem 0 0;
                     padding: 0;
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
@@ -2602,217 +3204,344 @@
                     font-size: 0.9rem;
                     color: #33475b;
                 }
-
-                /* ── contact strip ── */
-                .pr-contact {
-                    position: relative;
-                    z-index: 1;
-                    margin-top: 3rem;
-                    border-top: 1px solid #dbe7f4;
-                    background: rgba(255, 255, 255, 0.75);
-                }
-                .pr-contact-inner {
-                    max-width: 1180px;
-                    margin: 0 auto;
-                    padding: 1.15rem 2rem;
-                    display: flex;
-                    justify-content: space-between;
-                    gap: 1.25rem;
-                    flex-wrap: wrap;
-                    box-sizing: border-box;
-                }
-                .pr-contact a {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 0.7rem;
-                    color: #1f3a52;
-                    text-decoration: none;
-                    font-size: 0.92rem;
-                }
-                .pr-contact a:hover {
-                    color: #1273cf;
-                }
-                .pr-ico {
-                    flex: 0 0 auto;
-                    width: 34px;
-                    height: 34px;
-                    border-radius: 50%;
-                    background: #1273cf;
-                    display: grid;
-                    place-items: center;
-                }
-                .pr-ico svg {
-                    width: 16px;
-                    height: 16px;
-                    fill: #fff;
-                }
-
-                /* Pins replace the list on desktop; the list comes back on
-                   phones, where dashed leader lines have nowhere to go. */
+                /* the rail replaces the list once the map is interactive */
                 .pr-has-pins .pr-list {
                     display: none;
                 }
-
-                /* Between 900 and 1180 there is no room for three columns beside
-                   a map whose labels reach outside it: copy + map on top, the
-                   features become a row underneath. */
-                @media (max-width: 1180px) {
-                    .pr-stage {
-                        grid-template-columns: minmax(220px, 1fr) minmax(0, 1.7fr);
-                    }
-                    .pr-feats {
-                        grid-column: 1 / -1;
-                        flex-direction: row;
-                        flex-wrap: wrap;
-                    }
-                    .pr-feats li {
-                        flex: 1 1 240px;
-                    }
-                }
-                @media (max-width: 900px) {
-                    .pr-stage {
-                        grid-template-columns: 1fr;
-                        gap: 2rem;
-                    }
-                    .pr-sub {
-                        max-width: none;
-                    }
-                    .pr-map {
-                        max-width: 480px;
-                        margin: 0 auto;
-                    }
-                    .pr-line,
-                    .pr-label {
-                        display: none;
-                    }
-                    .pr-has-pins .pr-list {
-                        display: grid;
-                    }
-                    .pr-contact-inner {
-                        justify-content: flex-start;
-                        gap: 0.9rem;
-                        flex-direction: column;
-                    }
-                }
-                @media (max-width: 600px) {
-                    .pr-inner,
-                    .pr-contact-inner {
-                        padding-left: 1.25rem;
-                        padding-right: 1.25rem;
-                    }
-                    .pr-logo {
-                        width: 120px;
-                        margin-bottom: 1.25rem;
-                    }
-                    .pr-pin .pr-mark {
-                        left: -11px;
-                        width: 22px;
-                    }
-                }
-
-                /* No map image on the server yet: drop the map, keep the list,
-                   so the section still reads as a finished block. */
-                .pr-no-map .pr-map {
+                /* map image missing: drop the map, keep the plain list */
+                .pr-no-map .pr-mapwrap {
                     display: none;
                 }
                 .pr-no-map .pr-list {
                     display: grid;
                 }
+
+                /* ── responsive ── */
+                @media (max-width: 1040px) {
+                    .pr-stage {
+                        grid-template-columns: 1fr;
+                        gap: 1.5rem;
+                    }
+                    .pr-map {
+                        max-width: 470px;
+                    }
+                    .pr-side {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                        align-items: start;
+                    }
+                    .pr-feats {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                    }
+                }
+                @media (max-width: 700px) {
+                    .pr-section {
+                        padding: 3rem 0 2.75rem;
+                    }
+                    .pr-inner {
+                        padding-left: 1.15rem;
+                        padding-right: 1.15rem;
+                    }
+                    .pr-head {
+                        margin-bottom: 1.5rem;
+                    }
+                    .pr-mapwrap {
+                        border-radius: 20px;
+                        padding: 0.5rem 0.4rem 0.25rem;
+                    }
+                    .pr-map {
+                        max-width: 340px;
+                    }
+                    .pr-pin {
+                        --mw: 27px;
+                    }
+                    .pr-pin-shadow {
+                        width: 22px;
+                    }
+                    /* tags follow the finger, not the cursor — only the selected
+                       kiosk shows one, so they never pile up on a small map */
+                    .pr-pin:hover .pr-tip {
+                        opacity: 0;
+                        visibility: hidden;
+                    }
+                    .pr-pin.is-active .pr-tip {
+                        opacity: 1;
+                        visibility: visible;
+                    }
+                    /* chips scroll sideways instead of wrapping into a wall */
+                    .pr-rail {
+                        flex-wrap: nowrap;
+                        overflow-x: auto;
+                        scroll-snap-type: x proximity;
+                        -webkit-overflow-scrolling: touch;
+                        scrollbar-width: none;
+                        margin: 0 -1.15rem;
+                        padding: 0.15rem 1.15rem 0.5rem;
+                    }
+                    .pr-rail::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .pr-chip {
+                        scroll-snap-align: center;
+                    }
+                    .pr-stats {
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 0.9rem 0.5rem;
+                        padding: 1rem 0.75rem;
+                    }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .pr-pin-ring,
+                    .pr-pin-ring::after,
+                    .pr-card-live::before,
+                    .pr-has-pins .pr-pin {
+                        animation: none;
+                    }
+                    .pr-mark,
+                    .pr-tip,
+                    .pr-chip {
+                        transition: none;
+                    }
+                }
             </style>
 
             <div class="pr-inner">
-                <div class="pr-stage">
-                    <div class="pr-left">
-                        <img class="pr-logo" src="logo.png" alt="DOD — Doctors on Duty" width="148" height="60" loading="lazy" decoding="async" />
-                        <span class="pr-eyebrow">Our Presence</span>
-                        <h2 class="pr-headline">DOD Smart Health Kiosk Across <em>India</em></h2>
-                        <p class="pr-sub">Delivering accessible, affordable and advanced healthcare services to communities across the nation.</p>
-                    </div>
-
-                    <div class="pr-map">
-                        <img
-                            class="pr-map-img"
-                            src="img/india-map.svg"
-                            alt="Map of India showing DOD Smart Health Kiosk locations"
-                            loading="lazy"
-                            decoding="async"
-                            onerror="document.getElementById('presence').classList.add('pr-no-map');"
-                        />
-                        <!-- pins are built from the list below -->
-                    </div>
-
-                    <ul class="pr-feats">
-                        <li>
-                            <span class="pr-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></span>
-                            <div><strong>24&#215;7 Availability</strong><span>Walk up any hour of the day &mdash; no appointment, no queue.</span></div>
-                        </li>
-                        <li>
-                            <span class="pr-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/><path d="m10 8 2.5 4 1.5-2 2 2"/></svg></span>
-                            <div><strong>Live Doctor Consultation</strong><span>Talk to a qualified doctor over video, right from the kiosk.</span></div>
-                        </li>
-                        <li>
-                            <span class="pr-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg></span>
-                            <div><strong>Instant Health Report</strong><span>Vitals and test results in minutes, printed or on your phone.</span></div>
-                        </li>
-                        <li>
-                            <span class="pr-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>
-                            <div><strong>Records Kept Safe</strong><span>Every visit is saved to your digital health record.</span></div>
-                        </li>
-                    </ul>
+                <div class="pr-head">
+                    <span class="pr-eyebrow">Our Presence</span>
+                    <h2 class="pr-headline">DOD Smart Health Kiosk Across <em>India</em></h2>
+                    <p class="pr-sub">Delivering accessible, affordable and advanced healthcare to communities across the nation &mdash; one Digital Swasthya Kendra at a time.</p>
                 </div>
 
-                <!-- Edit this list to change the map. data-x / data-y are the pin
-                     position in % of the map image, data-side is which way the
-                     label points. The current values come from each city's real
-                     latitude/longitude run through the same projection that drew
-                     img/india-map.svg, so they sit on the actual city. Adding a
-                     city by hand? Open the page with ?pins=tune and click it. -->
+                <div class="pr-stage">
+                    <div class="pr-mapwrap">
+                        <div class="pr-map" id="prMap">
+                            <img
+                                class="pr-map-img"
+                                src="img/india-map.svg"
+                                alt="Map of India showing DOD Smart Health Kiosk locations"
+                                width="2000"
+                                height="2349"
+                                loading="lazy"
+                                decoding="async"
+                                onerror="document.getElementById('presence').classList.add('pr-no-map');"
+                            />
+                            <!-- kiosk markers are built from the list below -->
+                        </div>
+                        <p class="pr-hint">
+                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5 4 9l16-6-6 16-2.5-5L9 11.5Z" /></svg>
+                            Tap a kiosk to see where we are
+                        </p>
+                    </div>
+
+                    <aside class="pr-side">
+                        <div class="pr-card" id="prCard">
+                            <div class="pr-card-top">
+                                <img class="pr-card-img" src="img/kiosk-marker.webp" alt="" aria-hidden="true" width="132" height="279" loading="lazy" decoding="async" />
+                                <div>
+                                    <span class="pr-card-live">Live now</span>
+                                    <h3 id="prCardState">Delhi</h3>
+                                    <p class="pr-card-cities" id="prCardCities">Delhi</p>
+                                </div>
+                            </div>
+                            <div class="pr-card-tags">
+                                <span>24&#215;7 open</span>
+                                <span>Live doctor</span>
+                                <span>Instant report</span>
+                            </div>
+                        </div>
+
+                        <ul class="pr-rail" id="prRail"></ul>
+
+                        <ul class="pr-feats">
+                            <li>
+                                <span class="pr-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></span>
+                                <div><strong>24&#215;7 Availability</strong><span>Walk up any hour of the day &mdash; no appointment, no queue.</span></div>
+                            </li>
+                            <li>
+                                <span class="pr-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/><path d="m10 8 2.5 4 1.5-2 2 2"/></svg></span>
+                                <div><strong>Live Doctor Consultation</strong><span>Talk to a qualified doctor over video, right from the kiosk.</span></div>
+                            </li>
+                            <li>
+                                <span class="pr-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg></span>
+                                <div><strong>Instant Health Report</strong><span>Vitals and test results in minutes, printed or on your phone.</span></div>
+                            </li>
+                            <li>
+                                <span class="pr-feat-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>
+                                <div><strong>Records Kept Safe</strong><span>Every visit is saved to your digital health record.</span></div>
+                            </li>
+                        </ul>
+                    </aside>
+                </div>
+
+                <ul class="pr-stats">
+                    <li><b>500+</b><span>Installations</span></li>
+                    <li><b id="prStatStates">5</b><span>States</span></li>
+                    <li><b id="prStatCities">7</b><span>Cities</span></li>
+                    <li><b>24&#215;7</b><span>Always open</span></li>
+                </ul>
+
+                <!-- Edit this list to change the map. data-x / data-y are the
+                     marker's base position in % of the map image. The values come
+                     from each city's real latitude/longitude run through the same
+                     projection that drew img/india-map.svg, so a kiosk stands on
+                     the actual city. Adding one by hand? Open the page with
+                     ?pins=tune and click the spot. -->
                 <ul class="pr-list" id="prLocations">
-                    <li data-x="30.9" data-y="26.9" data-side="right"><b>Delhi</b><span>Delhi</span></li>
-                    <li data-x="43.7" data-y="32.5" data-side="right"><b>Uttar Pradesh</b><span>Noida, Lucknow</span></li>
-                    <li data-x="31.6" data-y="43.9" data-side="right"><b>Madhya Pradesh</b><span>Bhopal</span></li>
-                    <li data-x="16.1" data-y="57.2" data-side="left"><b>Maharashtra</b><span>Mumbai, Thane</span></li>
-                    <li data-x="32.2" data-y="76.6" data-side="right"><b>Karnataka</b><span>Bangalore</span></li>
+                    <li data-x="30.9" data-y="26.9"><b>Delhi</b><span>Delhi</span></li>
+                    <li data-x="43.7" data-y="32.5"><b>Uttar Pradesh</b><span>Noida, Lucknow</span></li>
+                    <li data-x="31.6" data-y="43.9"><b>Madhya Pradesh</b><span>Bhopal</span></li>
+                    <li data-x="16.1" data-y="57.2"><b>Maharashtra</b><span>Mumbai, Thane</span></li>
+                    <li data-x="32.2" data-y="76.6"><b>Karnataka</b><span>Bangalore</span></li>
                 </ul>
             </div>
-
 
             <script>
                 (function () {
                     var sec = document.getElementById("presence");
-                    var map = sec.querySelector(".pr-map");
-                    var items = sec.querySelectorAll("#prLocations li");
-                    if (!map || !items.length) return;
+                    var map = document.getElementById("prMap");
+                    var rail = document.getElementById("prRail");
+                    var items = sec ? sec.querySelectorAll("#prLocations li") : [];
+                    if (!sec || !map || !rail || !items.length) return;
 
-                    var PIN = '<img class="pr-mark" src="img/kiosk-pin.webp" alt="" aria-hidden="true" width="72" height="163" loading="lazy" decoding="async">';
+                    // Hover-to-preview only where there is a real cursor.
+                    var fine = window.matchMedia ? window.matchMedia("(hover: hover) and (pointer: fine)").matches : false;
 
-                    var frag = document.createDocumentFragment();
-                    Array.prototype.forEach.call(items, function (li) {
-                        var pin = document.createElement("div");
-                        pin.className = "pr-pin pr-pin--" + (li.dataset.side === "left" ? "left" : "right");
-                        pin.style.setProperty("--x", li.dataset.x + "%");
-                        pin.style.setProperty("--y", li.dataset.y + "%");
-                        pin.innerHTML = PIN + '<span class="pr-line"></span>';
+                    var MARK = '<img class="pr-mark" src="img/kiosk-marker.webp" alt="" aria-hidden="true" width="132" height="279" loading="lazy" decoding="async">';
 
-                        // Label text is copied as text, never as markup.
-                        var label = document.createElement("span");
-                        label.className = "pr-label";
-                        var state = document.createElement("b");
-                        state.textContent = li.querySelector("b").textContent;
-                        var city = document.createElement("i");
-                        city.textContent = li.querySelector("span").textContent;
-                        label.appendChild(state);
-                        label.appendChild(city);
-                        pin.appendChild(label);
-
-                        frag.appendChild(pin);
+                    var places = Array.prototype.map.call(items, function (li) {
+                        return {
+                            state: li.querySelector("b").textContent.trim(),
+                            cities: li.querySelector("span").textContent.trim(),
+                            x: li.dataset.x,
+                            y: li.dataset.y,
+                        };
                     });
-                    map.appendChild(frag);
+
+                    // City count for the stats strip, derived from the list so it
+                    // can never drift from the pins.
+                    var cityTotal = places.reduce(function (n, p) {
+                        return n + p.cities.split(",").filter(function (s) { return s.trim(); }).length;
+                    }, 0);
+                    var elStates = document.getElementById("prStatStates");
+                    var elCities = document.getElementById("prStatCities");
+                    if (elStates) elStates.textContent = places.length;
+                    if (elCities) elCities.textContent = cityTotal;
+
+                    var pins = [];
+                    var chips = [];
+                    var pinFrag = document.createDocumentFragment();
+                    var railFrag = document.createDocumentFragment();
+
+                    places.forEach(function (p, i) {
+                        // ── map marker ──
+                        var pin = document.createElement("button");
+                        pin.type = "button";
+                        pin.className = "pr-pin";
+                        pin.style.setProperty("--x", p.x + "%");
+                        pin.style.setProperty("--y", p.y + "%");
+                        pin.style.setProperty("--d", i * 0.12 + "s");
+                        pin.setAttribute("aria-label", "DOD kiosks in " + p.state + ": " + p.cities);
+                        pin.innerHTML = '<span class="pr-pin-ring"></span><span class="pr-pin-shadow"></span>' + MARK;
+
+                        // Label text is set as text, never as markup.
+                        var tip = document.createElement("span");
+                        tip.className = "pr-tip";
+                        var tb = document.createElement("b");
+                        tb.textContent = p.state;
+                        var ti = document.createElement("i");
+                        ti.textContent = p.cities;
+                        tip.appendChild(tb);
+                        tip.appendChild(ti);
+                        pin.appendChild(tip);
+
+                        pin.addEventListener("click", function () { select(i, true); });
+                        pin.addEventListener("mouseenter", function () { if (fine) select(i, true); });
+                        pin.addEventListener("keydown", onKey);
+                        pinFrag.appendChild(pin);
+                        pins.push(pin);
+
+                        // ── chip ──
+                        var li = document.createElement("li");
+                        var chip = document.createElement("button");
+                        chip.type = "button";
+                        chip.className = "pr-chip";
+                        chip.textContent = p.state;
+                        chip.setAttribute("aria-pressed", "false");
+                        chip.addEventListener("click", function () { select(i, true); });
+                        li.appendChild(chip);
+                        railFrag.appendChild(li);
+                        chips.push(chip);
+                    });
+
+                    map.appendChild(pinFrag);
+                    rail.appendChild(railFrag);
                     sec.classList.add("pr-has-pins");
 
-                    // Pin-placing helper. Open the page with ?pins=tune and click
-                    // a spot on the map — the console prints the data-x / data-y
-                    // for that point, ready to paste into the list above.
+                    var cardState = document.getElementById("prCardState");
+                    var cardCities = document.getElementById("prCardCities");
+                    var cur = -1;
+                    var locked = false; // stop auto-cycling once the visitor takes over
+                    var timer = null;
+
+                    function onKey(e) {
+                        var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+                        if (!d) return;
+                        e.preventDefault();
+                        var n = (cur + d + places.length) % places.length;
+                        select(n, true);
+                        pins[n].focus();
+                    }
+
+                    function select(i, byUser) {
+                        if (i === cur) return;
+                        if (byUser) {
+                            locked = true;
+                            if (timer) { clearInterval(timer); timer = null; }
+                        }
+                        cur = i;
+                        var p = places[i];
+                        pins.forEach(function (el, n) { el.classList.toggle("is-active", n === i); });
+                        chips.forEach(function (el, n) {
+                            el.classList.toggle("is-active", n === i);
+                            el.setAttribute("aria-pressed", n === i ? "true" : "false");
+                        });
+                        if (cardState) cardState.textContent = p.state;
+                        if (cardCities) cardCities.textContent = p.cities;
+
+                        // keep the chosen chip in view on a phone's scrolling rail
+                        if (byUser && chips[i].scrollIntoView) {
+                            chips[i].scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+                        }
+                    }
+
+                    select(0, false);
+
+                    // Gentle auto-tour while the section is on screen, so the map
+                    // shows what it does before anyone touches it. It stops for
+                    // good at the first click, and never starts if the visitor
+                    // asked for reduced motion.
+                    var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                    if (!calm && "IntersectionObserver" in window) {
+                        new IntersectionObserver(function (entries) {
+                            entries.forEach(function (en) {
+                                if (locked) return;
+                                if (en.isIntersecting && !timer) {
+                                    timer = setInterval(function () {
+                                        select((cur + 1) % places.length, false);
+                                    }, 2800);
+                                } else if (!en.isIntersecting && timer) {
+                                    clearInterval(timer);
+                                    timer = null;
+                                }
+                            });
+                        }, { threshold: 0.35 }).observe(map);
+                    }
+
+                    // Pin-placing helper: open the page with ?pins=tune and click a
+                    // spot on the map — the console prints the data-x / data-y for
+                    // that point, ready to paste into the list above.
                     if (window.location.search.indexOf("pins=tune") > -1) {
                         map.style.cursor = "crosshair";
                         map.addEventListener("click", function (e) {
@@ -2894,11 +3623,18 @@
                     grid-column: span 2;
                     grid-row: span 2;
                 }
-                .cr-tile video {
+                .cr-tile video,
+                .cr-tile img {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
                     display: block;
+                }
+                /* If a poster frame cannot be produced the tile keeps a branded
+                   surface rather than a black hole — the play button still reads
+                   as "there is a video here". */
+                .cr-tile {
+                    background: linear-gradient(150deg, #10314f 0%, #0b2036 100%);
                 }
                 .cr-tile::after {
                     /* readability scrim behind the caption */
@@ -3150,7 +3886,9 @@
                         if (!r) return;
                         var v = document.getElementById("crLbVideo");
                         v.src = r.videoUrl;
-                        if (r.thumbnailUrl) v.poster = r.thumbnailUrl;
+                        // Something to look at while the clip buffers.
+                        var p = r.thumbnailUrl || DOD.poster(r.videoUrl, 720);
+                        if (p) v.poster = p;
                         else v.removeAttribute("poster");
                         document.getElementById("crLbName").textContent = r.customerName || "";
                         document.getElementById("crLbLoc").textContent = r.location || "";
@@ -3174,10 +3912,7 @@
                         if (s) s.style.display = "none";
                     }
 
-                    fetch(API + "/reviews")
-                        .then(function (r) {
-                            return r.json();
-                        })
+                    DOD.fetchJSON(API + "/reviews")
                         .then(function (resp) {
                             if (!resp.success || !resp.data || !resp.data.length) return hideSection();
                             reviews = resp.data;
@@ -3193,11 +3928,15 @@
                                         ')" tabindex="0" role="button" aria-label="Play review by ' +
                                         esc(r.customerName) +
                                         '">' +
-                                        '<video muted playsinline preload="none"' +
-                                        (r.thumbnailUrl ? ' poster="' + esc(r.thumbnailUrl) + '"' : "") +
-                                        ' data-src="' +
-                                        esc(r.videoUrl) +
-                                        '"></video>' +
+                                        // A still image, not a <video>. Twelve <video>
+                                        // elements cost twelve connections and twelve
+                                        // metadata range-requests before anyone presses
+                                        // play; twelve JPEGs cost a few KB each and are
+                                        // lazily loaded by the browser itself. The clip
+                                        // is only fetched when the lightbox opens.
+                                        (function (p) {
+                                            return p ? '<img src="' + esc(p) + '" alt="" loading="lazy" decoding="async" onerror="this.style.visibility=\'hidden\'">' : "";
+                                        })(r.thumbnailUrl || DOD.poster(r.videoUrl, 480)) +
                                         '<span class="cr-play">' +
                                         PLAY_ICON +
                                         "</span>" +
@@ -3215,33 +3954,8 @@
                                 })
                                 .join("");
 
-                            // Tiles show a still frame, not a full download: the source is
-                            // attached only when the tile nears the viewport, and only
-                            // metadata is fetched unless a poster image was uploaded.
-                            var tiles = grid.querySelectorAll(".cr-tile video");
-                            function armTile(video) {
-                                if (!video.dataset.src) return;
-                                if (!video.getAttribute("poster")) video.preload = "metadata";
-                                video.src = video.dataset.src;
-                                delete video.dataset.src;
-                            }
-                            if ("IntersectionObserver" in window) {
-                                var io = new IntersectionObserver(
-                                    function (entries, obs) {
-                                        entries.forEach(function (en) {
-                                            if (!en.isIntersecting) return;
-                                            armTile(en.target);
-                                            obs.unobserve(en.target);
-                                        });
-                                    },
-                                    { rootMargin: "300px" },
-                                );
-                                tiles.forEach(function (v) {
-                                    io.observe(v);
-                                });
-                            } else {
-                                tiles.forEach(armTile);
-                            }
+                            // Nothing to arm any more — the tiles are plain lazy
+                            // images, and the clip is attached in crShowLb().
 
                             // Keyboard: Enter/Space opens the same lightbox as a click.
                             grid.querySelectorAll(".cr-tile").forEach(function (tile, i) {
@@ -3422,14 +4136,24 @@
                 <div class="yt-grid" data-aos="fade-up">
                     <div class="yt-card">
                         <div class="yt-embed-wrap">
-                            <iframe
-                                src="https://www.youtube.com/embed/QRKHbxHARg0"
-                                title="DOD Kiosk  -  How to Use"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen
-                                loading="lazy"
-                            >
-                            </iframe>
+                            <!-- Thumbnail + play button; the real player is built on
+                                 click by the delegated handler in <head>. -->
+                            <button type="button" class="yt-facade" data-yt="QRKHbxHARg0" aria-label="Play video: How to Use the DOD Health Kiosk">
+                                <img
+                                    src="https://i.ytimg.com/vi/QRKHbxHARg0/maxresdefault.jpg"
+                                    alt=""
+                                    width="1280"
+                                    height="720"
+                                    loading="lazy"
+                                    decoding="async"
+                                    onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/QRKHbxHARg0/hqdefault.jpg'"
+                                />
+                                <span class="yt-facade-play" aria-hidden="true"
+                                    ><svg viewBox="0 0 68 48">
+                                        <path class="yt-p1" d="M66.5 7.7a8 8 0 0 0-5.6-5.7C56 .7 34 .7 34 .7s-22 0-26.9 1.3a8 8 0 0 0-5.6 5.7A83 83 0 0 0 .3 24a83 83 0 0 0 1.2 16.3 8 8 0 0 0 5.6 5.7C12 47.3 34 47.3 34 47.3s22 0 26.9-1.3a8 8 0 0 0 5.6-5.7A83 83 0 0 0 67.7 24a83 83 0 0 0-1.2-16.3z" />
+                                        <path d="M27 34.2 45.2 24 27 13.8z" fill="#fff" /></svg
+                                ></span>
+                            </button>
                         </div>
                         <div class="yt-meta">
                             <span class="yt-badge">Machine Demo</span>
@@ -3440,14 +4164,22 @@
 
                     <div class="yt-card">
                         <div class="yt-embed-wrap">
-                            <iframe
-                                src="https://www.youtube.com/embed/H9aOom7ldfg"
-                                title="DOD Kiosk  -  Book Appointment"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen
-                                loading="lazy"
-                            >
-                            </iframe>
+                            <button type="button" class="yt-facade" data-yt="H9aOom7ldfg" aria-label="Play video: How to Book Consultation with Doctors">
+                                <img
+                                    src="https://i.ytimg.com/vi/H9aOom7ldfg/maxresdefault.jpg"
+                                    alt=""
+                                    width="1280"
+                                    height="720"
+                                    loading="lazy"
+                                    decoding="async"
+                                    onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/H9aOom7ldfg/hqdefault.jpg'"
+                                />
+                                <span class="yt-facade-play" aria-hidden="true"
+                                    ><svg viewBox="0 0 68 48">
+                                        <path class="yt-p1" d="M66.5 7.7a8 8 0 0 0-5.6-5.7C56 .7 34 .7 34 .7s-22 0-26.9 1.3a8 8 0 0 0-5.6 5.7A83 83 0 0 0 .3 24a83 83 0 0 0 1.2 16.3 8 8 0 0 0 5.6 5.7C12 47.3 34 47.3 34 47.3s22 0 26.9-1.3a8 8 0 0 0 5.6-5.7A83 83 0 0 0 67.7 24a83 83 0 0 0-1.2-16.3z" />
+                                        <path d="M27 34.2 45.2 24 27 13.8z" fill="#fff" /></svg
+                                ></span>
+                            </button>
                         </div>
                         <div class="yt-meta">
                             <span class="yt-badge">Consultation Guide</span>
@@ -3513,13 +4245,58 @@
                     height: 0;
                     overflow: hidden;
                 }
-                .yt-embed-wrap iframe {
+                .yt-embed-wrap iframe,
+                .yt-embed-wrap .yt-facade {
                     position: absolute;
                     top: 0;
                     left: 0;
                     width: 100%;
                     height: 100%;
                     border: none;
+                }
+                /* Stand-in for the player until someone presses play. */
+                .yt-facade {
+                    padding: 0;
+                    background: #000;
+                    cursor: pointer;
+                    display: block;
+                    overflow: hidden;
+                }
+                .yt-facade img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                    /* maxresdefault is often unavailable and hqdefault arrives
+                       letterboxed; cover crops the bars away either way. */
+                }
+                .yt-facade-play {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 68px;
+                    height: 48px;
+                    transition: transform 0.2s ease;
+                }
+                .yt-facade-play svg {
+                    width: 100%;
+                    height: 100%;
+                    display: block;
+                }
+                .yt-facade-play .yt-p1 {
+                    fill: #212121;
+                    fill-opacity: 0.8;
+                    transition: fill 0.2s ease, fill-opacity 0.2s ease;
+                }
+                .yt-facade:hover .yt-facade-play,
+                .yt-facade:focus-visible .yt-facade-play {
+                    transform: translate(-50%, -50%) scale(1.1);
+                }
+                .yt-facade:hover .yt-p1,
+                .yt-facade:focus-visible .yt-p1 {
+                    fill: #f00;
+                    fill-opacity: 1;
                 }
                 .yt-meta {
                     padding: 1.5rem;
@@ -3732,8 +4509,10 @@
                                     }
                                     grid.innerHTML = members.sort(function(a,b){ return (a.order||0) - (b.order||0); }).map(function(m){
                                         var initials = m.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+                                        // Portraits are drawn at ~200px; ask the CDN for
+                                        // that, fall back to the original, then to initials.
                                         var img = m.imageUrl
-                                            ? '<img src="' + m.imageUrl + '" alt="' + m.name + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" /><span class="leader-initials" style="display:none;">' + initials + '</span>'
+                                            ? '<img src="' + DOD.img(m.imageUrl, 400) + '" alt="' + m.name + '" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;" onerror="if(!this.dataset.fb){this.dataset.fb=\'1\';this.src=\'' + m.imageUrl + '\';return;}this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" /><span class="leader-initials" style="display:none;">' + initials + '</span>'
                                             : '<span class="leader-initials">' + initials + '</span>';
                                         var mailIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
                                         var email = m.email
@@ -5472,7 +6251,19 @@
                 return d.innerHTML;
             }
 
+            // Returns a Response-like { ok, json() } rather than a real Response,
+            // because the answer may come from the previous visit rather than the
+            // network. Call sites are unchanged: they still `await res.json()`.
             async function fetchWithRetry(url, retries = 3, delay = 2500) {
+                // A fresh copy from last time paints the section now, instead of
+                // after however long the sleeping backend takes to wake up. The
+                // background refresh keeps the next load current.
+                const cached = DOD.peek(url);
+                if (cached) {
+                    DOD.refresh(url);
+                    return { ok: true, json: async () => cached };
+                }
+
                 for (let i = 0; i < retries; i++) {
                     try {
                         // Abort a stalled request so we don't hang for minutes on
@@ -5481,7 +6272,11 @@
                         const t = setTimeout(() => ctrl.abort(), 12000);
                         const res = await fetch(url, { signal: ctrl.signal });
                         clearTimeout(t);
-                        if (res.ok) return res;
+                        if (res.ok) {
+                            const data = await res.json();
+                            DOD.put(url, data);
+                            return { ok: true, json: async () => data };
+                        }
                     } catch (e) {
                         /* network error / timeout — fall through to retry */
                     }
@@ -5531,7 +6326,7 @@
                         .map(
                             (b) => `
                     <figure class="sc-card">
-                        <div class="sc-media"><img src="${esc(b.logoUrl)}" alt="${esc(b.altText || b.name)}" loading="lazy" decoding="async"></div>
+                        <div class="sc-media"><img src="${esc(DOD.img(b.logoUrl, 280))}" alt="${esc(b.altText || b.name)}" width="140" height="80" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${esc(b.logoUrl)}'"></div>
                         <figcaption class="sc-name">${esc(b.name)}</figcaption>
                     </figure>`,
                         )
@@ -5563,7 +6358,7 @@
                             (c) => `
                     <figure class="sc-card">
                         <div class="sc-media">
-                            ${c.logoUrl ? `<img src="${esc(c.logoUrl)}" alt="${esc(c.title)}" loading="lazy" decoding="async">` : `<span class="sc-seal">${esc(c.sealEmoji || "")}</span>`}
+                            ${c.logoUrl ? `<img src="${esc(DOD.img(c.logoUrl, 200))}" alt="${esc(c.title)}" width="80" height="80" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${esc(c.logoUrl)}'">` : `<span class="sc-seal">${esc(c.sealEmoji || "")}</span>`}
                         </div>
                         <figcaption class="sc-name">${esc(c.title)}</figcaption>
                         ${addsInfo(c) ? `<p class="sc-desc">${esc(c.description)}</p>` : ""}
@@ -5599,7 +6394,7 @@
                                 .map((img, ri) => {
                                     const tall = (ci === 0 && ri === 0) || (ci === 2 && ri === col.length - 1) ? " dg-tall" : "";
                                     return `<div class="dg-cell${tall}" onclick="dgOpenLb(this)">
-                            <img src="${esc(img.imageUrl)}" alt="${esc(img.title)}" loading="lazy" onerror="this.parentElement.classList.add('dg-placeholder');this.remove()">
+                            <img src="${esc(DOD.img(img.imageUrl, 640))}" srcset="${esc(DOD.srcset(img.imageUrl, [400, 640, 900, 1280]))}" sizes="(max-width: 700px) 46vw, 24vw" alt="${esc(img.title)}" loading="lazy" decoding="async" data-full="${esc(DOD.img(img.imageUrl, 1600))}" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.removeAttribute('srcset');this.src='${esc(img.imageUrl)}';return;}this.parentElement.classList.add('dg-placeholder');this.remove()">
                             <span class="dg-caption">${esc(img.caption || img.title)}</span>
                         </div>`;
                                 })
@@ -5612,7 +6407,7 @@
                     const newCells = [];
                     collage.querySelectorAll(".dg-cell").forEach((cell) => {
                         const img = cell.querySelector("img");
-                        if (img) newCells.push({ src: img.src, cap: cell.querySelector(".dg-caption")?.textContent || "" });
+                        if (img) newCells.push({ src: img.src, full: img.dataset.full || img.src, cap: cell.querySelector(".dg-caption")?.textContent || "" });
                     });
                     window._dgCells = newCells;
                 } catch (err) {
@@ -5634,13 +6429,13 @@
 
                     grid.innerHTML = json.data
                         .map((v) => {
-                            const embedUrl = v.embedUrl || "https://www.youtube.com/embed/" + (v.videoId || "");
+                            // A thumbnail stands in for the player until it is
+                            // clicked — seven live embeds cost several MB of
+                            // YouTube script that most visitors never use.
+                            const vid = v.videoId || DOD.ytId(v.embedUrl || v.youtubeUrl);
                             return `<div class="yt-card">
                         <div class="yt-embed-wrap">
-                            <iframe src="${esc(embedUrl)}"
-                                title="${esc(v.title)}"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen loading="lazy"></iframe>
+                            ${DOD.ytFacade(vid, v.title)}
                         </div>
                         <div class="yt-meta">
                             ${v.badge ? `<span class="yt-badge">${esc(v.badge)}</span>` : ""}

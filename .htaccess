@@ -56,7 +56,9 @@
   ExpiresDefault                              "access plus 1 month"
 
   # HTML
-  ExpiresByType text/html                     "access plus 0 seconds"
+  # Kept short; the real policy is the Cache-Control rule further down, which
+  # adds the stale-while-revalidate window mod_expires cannot express.
+  ExpiresByType text/html                     "access plus 5 minutes"
   ExpiresByType application/xhtml+xml         "access plus 0 seconds"
 
   # Data
@@ -113,12 +115,29 @@
     Header set Cache-Control "public, max-age=86400, must-revalidate"
   </FilesMatch>
 
-  # No cache for HTML
+  # HTML: short freshness + a long stale window.
+  #
+  # This used to be "no-store", which forbade the browser from keeping the file
+  # at all — every visit, and every Back navigation, re-downloaded ~300 KB and
+  # waited a full round-trip before the first pixel. With the rule below a
+  # repeat visitor paints from disk instantly, the CDN keeps serving the cached
+  # copy while it refreshes in the background, and a deploy is picked up within
+  # five minutes. Publishing something that must go live *now*? Purge the CDN
+  # cache from hPanel, or hard-reload.
   <FilesMatch "\.(html|htm)$">
-    Header set Cache-Control "no-cache, no-store, must-revalidate"
-    Header set Pragma "no-cache"
-    Header set Expires "0"
+    Header set Cache-Control "public, max-age=300, stale-while-revalidate=604800"
+    Header unset Pragma
+    Header unset Expires
   </FilesMatch>
+
+  # Video: content-addressed by name, same rule as images.
+  <FilesMatch "\.(mp4|webm|mov|m4v)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Proxies must key their cache on the encoding, or a Brotli body can be
+  # handed to a client that only speaks gzip.
+  Header append Vary Accept-Encoding
 
   # ───────── SECURITY HEADERS ─────────
   Header set X-Content-Type-Options "nosniff"
