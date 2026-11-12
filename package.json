@@ -1,0 +1,26 @@
+{
+  "name": "primary",
+  "version": "1.0.0",
+  "description": "This is the official website for **DOD Health Kiosk** by **Amazemedics Pvt. Ltd.** - A revolutionary digital healthcare solution bringing specialist care to every citizen of India.",
+  "main": "build-css.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dodsupport01-hue/DOD.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dodsupport01-hue/DOD/issues"
+  },
+  "homepage": "https://github.com/dodsupport01-hue/DOD#readme",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  },
+  "devDependencies": {
+    "clean-css": "^5.3.3"
+  }
+}
